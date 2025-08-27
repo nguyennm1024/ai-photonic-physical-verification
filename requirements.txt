@@ -1,0 +1,78 @@
+# Layout Verification App - Requirements
+# Core GUI and System Libraries (built-in with Python)
+# tkinter - Built-in GUI framework
+# threading - Built-in threading support
+# queue - Built-in queue implementation
+# os, sys, tempfile, shutil, subprocess - Built-in system libraries
+# pathlib, json, re, time, random - Built-in utilities
+# multiprocessing - Built-in parallel processing
+# xml.etree.ElementTree - Built-in XML parsing
+# concurrent.futures - Built-in concurrent execution
+
+# Third-party Dependencies
+# ========================
+
+# GDS File Processing
+gdspy>=1.6.13
+
+# Image Processing and Computer Vision
+Pillow>=10.0.0
+numpy>=1.20.0
+
+# Data Visualization and Plotting
+matplotlib>=3.5.0
+
+# AI/ML Integration - Google Gemini
+google-generativeai>=0.8.0
+
+# Optional Dependencies for Enhanced SVG Conversion
+# =================================================
+# Note: These are optional but recommended for better SVG-to-PNG conversion
+
+# SVG Processing (alternative conversion methods)
+cairosvg>=2.7.0
+
+# XML Processing (enhanced XML handling)
+lxml>=4.9.0
+
+# Development and Testing Dependencies (Optional)
+# ==============================================
+# Uncomment these if you want to run tests or development tools
+
+# pytest>=7.0.0
+# pytest-cov>=4.0.0
+# black>=23.0.0
+# flake8>=6.0.0
+# mypy>=1.0.0
+
+# System Dependencies Notes:
+# =========================
+# The following system tools are used as fallback conversion methods
+# but are NOT required for basic functionality:
+#
+# For macOS:
+#   brew install librsvg        # Provides rsvg-convert (recommended)
+#   brew install inkscape       # Provides inkscape (fallback)
+#   # Google Chrome              # For browser-based conversion (last resort)
+#
+# For Ubuntu/Debian:
+#   sudo apt-get install librsvg2-bin    # Provides rsvg-convert
+#   sudo apt-get install inkscape        # Provides inkscape
+#   # Google Chrome or Chromium           # For browser-based conversion
+#
+# For Windows:
+#   # Download and install Inkscape from https://inkscape.org/
+#   # Install librsvg binaries or use WSL for rsvg-convert
+#   # Install Google Chrome
+#
+# Environment Variables Required:
+# ==============================
+# GOOGLE_API_KEY - Required for AI analysis functionality
+# Set with: export GOOGLE_API_KEY=your_api_key_here
+#
+# Get your API key from: https://makersuite.google.com/app/apikey
+
+# Python Version Compatibility:
+# =============================
+# Tested with Python 3.8+
+# Recommended: Python 3.9 or higher
