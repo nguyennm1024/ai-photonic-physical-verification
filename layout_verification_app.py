@@ -12,8 +12,8 @@ Features:
 - Interactive user feedback and classification
 - Original image display with bounding box highlighting
 
-Author: AI Assistant
-Date: 2025-06-28
+Author: William
+Date: 2025-08-27
 """
 
 import tkinter as tk
