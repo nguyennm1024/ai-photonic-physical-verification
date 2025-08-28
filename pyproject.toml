@@ -1,0 +1,45 @@
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["core", "ui", "utils"]
+known_third_party = ["tkinter", "matplotlib", "gdspy", "google", "google.generativeai", "PIL", "numpy", "cv2", "xml", "re", "os", "sys", "threading", "queue", "dataclasses", "enum", "typing", "json", "time", "datetime", "pathlib", "shutil", "tempfile", "subprocess", "traceback", "logging"]
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+default_section = "THIRDPARTY"
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503", "E501", "D205"]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    ".venv",
+    ".eggs",
+    "*.egg",
+    ".mypy_cache",
+    ".tox",
+]
+per-file-ignores = [
+    "__init__.py:F401",
+    "main.py:E501",  # Allow longer lines in main.py for UI setup
+]

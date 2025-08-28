@@ -267,6 +267,9 @@ $RECYCLE.BIN/
 .vscode/
 *.code-workspace
 
+# Cursor IDE
+.cursor/
+
 # Sublime Text
 *.sublime-project
 *.sublime-workspace
@@ -413,3 +416,4 @@ personal_config.py
 # Function analysis and implementation planning documents
 functions_understanding.md
 implementation_plan.md
+PHASE_1_SUMMARY.md
