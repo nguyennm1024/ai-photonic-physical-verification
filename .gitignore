@@ -485,3 +485,11 @@ ui/components/tile_viewer.py
 # Empty handler directories
 ui/handlers/
 ui/styles/
+
+# Ignore all tests
+tests/**
+**/tests/**
+**/test_*.py
+**/*_test.py
+**/test/**
+
