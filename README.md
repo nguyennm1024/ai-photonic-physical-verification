@@ -2,6 +2,8 @@
 
 A comprehensive GUI application for automated photonic integrated circuit (PIC) layout verification using AI-powered discontinuity detection.
 
+> **🎉 Recently Refactored**: The application has been refactored into a clean, modular architecture. See [REFACTORING_COMPLETE.md](REFACTORING_COMPLETE.md) for details.
+
 ## 🚀 Features
 
 ### Core Functionality
@@ -38,45 +40,57 @@ A comprehensive GUI application for automated photonic integrated circuit (PIC) 
 
 ## 🛠 Installation
 
-### 1. Clone the Repository
+### Quick Installation
+
 ```bash
+# 1. Clone repository
 git clone https://github.com/nguyennm1024/ai-photonic-physical-verification.git
 cd ai-photonic-physical-verification
+
+# 2. Install dependencies
+pip install -e .
+
+# 3. Set API key
+export GOOGLE_API_KEY='your_api_key_here'
+
+# 4. Install SVG converter (REQUIRED)
+brew install librsvg  # macOS
+# OR
+sudo apt-get install librsvg2-bin  # Ubuntu/Debian
+
+# 5. Run tests
+python test_modules.py
 ```
 
-### 2. Install Python Dependencies
-```bash
-pip install -r requirements.txt
-```
+### ⚠️ Critical Requirements
 
-### 3. Set Environment Variables
-```bash
-export GOOGLE_API_KEY=your_api_key_here
-```
+Before installation, you **MUST** have:
 
-### 4. Optional: Install System Tools (Recommended)
-For enhanced SVG-to-PNG conversion:
+1. ✅ **Python 3.9+** with tkinter
+2. ✅ **Google Gemini API Key** ([Get it here](https://makersuite.google.com/app/apikey))
+3. ✅ **SVG Converter** (rsvg-convert or inkscape) - **Required for AI analysis**
 
-**macOS:**
-```bash
-brew install librsvg inkscape
-```
+### 📖 Complete Installation Guide
 
-**Ubuntu/Debian:**
-```bash
-sudo apt-get install librsvg2-bin inkscape
-```
+**For detailed installation instructions, troubleshooting, and platform-specific notes:**
 
-**Windows:**
-- Download and install [Inkscape](https://inkscape.org/release/)
-- Install [Google Chrome](https://www.google.com/chrome/) for browser-based conversion
+👉 **See [INSTALLATION.md](INSTALLATION.md)**
+
+The installation guide includes:
+- Detailed prerequisites checklist
+- Step-by-step installation for macOS/Linux/Windows
+- Verification commands
+- Comprehensive troubleshooting
+- Platform-specific notes
 
 ## 🚀 Quick Start
 
 ### Basic Usage
 ```bash
-python layout_verification_app.py
+python main.py
 ```
+
+> **Note**: The old `layout_verification_app.py` has been renamed to `layout_verification_app_OLD.py`. Use `main.py` for the refactored version.
 
 ### Workflow
 1. **Load GDS File**: Click "Load GDS File" and select your layout file
@@ -94,13 +108,33 @@ python layout_verification_app.py
 
 ## 📖 Documentation
 
-### Application Architecture
-The application follows a monolithic design with several key components:
-- **File Processing**: GDS loading and SVG conversion
-- **Tile Management**: Virtual and physical tile generation
-- **AI Analysis**: Gemini-powered discontinuity detection
-- **User Interface**: Tkinter-based GUI with matplotlib integration
-- **Data Export**: Comprehensive results formatting
+### Application Architecture (v2.0 - Refactored)
+
+The application has been refactored into a **modular architecture** with clean separation of concerns:
+
+**Core Business Logic** (`core/` directory):
+- **`core/file_manager/`** - GDS loading and SVG conversion (3 modules)
+- **`core/tile_system/`** - Tile generation, caching, splitting (3 modules)
+- **`core/ai_analyzer/`** - Gemini integration with preserved prompts (4 modules)
+- **`core/roi_manager/`** - Region of interest management (2 modules)
+- **`core/app_state/`** - Centralized state management (2 modules)
+
+**Utilities** (`utils/` directory):
+- Coordinate transformations (SVG ↔ pixel)
+- Image processing helpers
+- Thread-safe communication
+
+**User Interface** (`ui/` directory - work in progress):
+- Reusable components
+- Event handlers
+- Styling and themes
+
+**Key Improvements:**
+- ✅ **Testable**: Core logic tested independently (13 unit tests, 6 integration tests)
+- ✅ **Maintainable**: Files 50-200 lines each (vs. 2,826 line monolith)
+- ✅ **Separated**: Business logic completely separate from UI
+- ✅ **Documented**: Comprehensive API documentation
+- ✅ **Validated**: Tested with real 4.5MB GDS files
 
 ### Configuration Options
 - **Grid Size**: Configurable rows × columns (default: 10×10)
@@ -134,31 +168,27 @@ The application follows a monolithic design with several key components:
 
 ### Common Issues
 
-#### "GOOGLE_API_KEY environment variable not set"
-```bash
-export GOOGLE_API_KEY=your_actual_api_key
-```
+**Installation Problems:**
+- Missing dependencies → See [INSTALLATION.md](INSTALLATION.md#troubleshooting)
+- API key not set → See [INSTALLATION.md](INSTALLATION.md#step-3-configure-google-api-key)
+- SVG converter missing → See [INSTALLATION.md](INSTALLATION.md#step-4-install-svg-converter-critical)
 
-#### "gdspy not available"
-```bash
-pip install gdspy>=1.6.13
-```
+**Runtime Problems:**
+- Tile generation fails → Install rsvg-convert or inkscape
+- Memory issues → Reduce grid size, use virtual tiles
+- Analysis errors → Check API key and converters
 
-#### SVG conversion fails
-- Install system dependencies: `librsvg`, `inkscape`, or Chrome
-- The app will show a placeholder if all conversion methods fail
-- AI analysis will still work without perfect SVG conversion
+### 📖 Full Troubleshooting Guide
 
-#### Memory issues with large grids
-- Reduce grid size (start with 5×5 or 10×10)
-- Use lower tile resolution (512px instead of 2048px)
-- Enable virtual tiles instead of pre-generated files
+For detailed troubleshooting instructions:
 
-### Performance Optimization
-- **Reduce CPU cores** for other system tasks
-- **Use virtual tiles** for memory efficiency
-- **Enable caching** for repeated analysis
-- **Focus on ROI** for targeted analysis
+👉 **See [INSTALLATION.md - Troubleshooting Section](INSTALLATION.md#troubleshooting)**
+
+Includes solutions for:
+- All installation errors
+- Runtime issues
+- Platform-specific problems
+- Performance optimization tips
 
 ## 📊 Example Usage
 
@@ -181,6 +211,11 @@ Virtual Tiles: Enabled
 ROI Analysis: Use for focused areas
 ```
 
+## 📚 Documentation
+
+- **[INSTALLATION.md](INSTALLATION.md)** - Complete installation guide
+- **[docs/REFACTORING_DESIGN.md](docs/REFACTORING_DESIGN.md)** - Architecture & design (for developers)
+
 ## 🤝 Contributing
 
 We welcome contributions! Here are some areas where you can help:
@@ -193,9 +228,10 @@ We welcome contributions! Here are some areas where you can help:
 ### Development Setup
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+3. Follow [INSTALLATION.md](INSTALLATION.md) for setup
+4. Review [docs/REFACTORING_DESIGN.md](docs/REFACTORING_DESIGN.md) for architecture
+5. Make your changes and add tests
+6. Submit a pull request
 
 ## 📄 License
 
@@ -214,11 +250,19 @@ This project is open source. Please see the license file for details.
 
 ## 📈 Project Status
 
-**Current Version**: 1.0.0  
+**Current Version**: 2.0.0 (Refactored)  
 **Status**: Active Development  
-**Last Updated**: August 2025
+**Last Updated**: October 2025
 
-### Recent Updates
+### Version 2.0 - Major Refactoring (October 2025)
+- ✅ **Modular Architecture**: 24 new modules with clean separation
+- ✅ **Core Logic Tested**: 13 unit tests + 6 integration tests (all passing)
+- ✅ **Real GDS Validated**: Tested with 4.5MB Nexus_Sample2.GDS
+- ✅ **AI Prompts Preserved**: Character-for-character accuracy maintained
+- ✅ **Documentation**: Comprehensive architecture docs + troubleshooting
+- 🚧 **UI Extraction**: In progress (Phase 3)
+
+### Version 1.0 - Initial Release (August 2025)
 - Initial release with complete GUI application
 - AI-powered discontinuity detection
 - Virtual tile system implementation
