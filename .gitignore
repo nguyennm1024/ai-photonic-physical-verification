@@ -388,6 +388,10 @@ htmlcov/
 *.bmp
 *.gif
 
+# Exception: Allow documentation images
+!figures/
+!figures/*.png
+
 # Large data files
 *.csv
 *.xlsx
