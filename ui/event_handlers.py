@@ -79,6 +79,8 @@ class EventHandlers:
             'add_roi_to_list': None,
             'update_summary': None,
             'display_tile_review': None,
+            'update_tile_status': None,
+            'clear_tile_status': None,
         }
         
         # Processing state
@@ -221,8 +223,9 @@ class EventHandlers:
                 
                 if result and os.path.exists(temp_png):
                     image = Image.open(temp_png)
-                    # Display image with grid overlay
-                    self._call_ui('display_image', image, grid_config)
+                    # Display image with grid overlay and SVG dimensions
+                    svg_dimensions = self.svg_parser.parse_dimensions(svg_path)
+                    self._call_ui('display_image', image, grid_config, svg_dimensions)
                     os.unlink(temp_png)
                     print(f"✅ Layout displayed with {rows}x{cols} tile grid overlay")
                 else:
@@ -230,6 +233,9 @@ class EventHandlers:
             except Exception as e:
                 print(f"⚠️  Could not display layout image: {e}")
             
+            # Clear any previous tile status overlays
+            self._call_ui('clear_tile_status')
+
             # Update UI
             self._call_ui('update_grid_info', f"Grid: {rows}x{cols} ({rows*cols} virtual tiles)")
             self._call_ui('update_status', f"✅ Virtual grid created: {rows}x{cols} - Draw ROI or process tiles")
@@ -286,10 +292,14 @@ class EventHandlers:
             messagebox.showerror("Error", "No SVG file loaded")
             return
         
-        # Get image dimensions
+        # Get SVG dimensions (original coordinates)
         dimensions = self.svg_parser.parse_dimensions(svg_path)
-        image_size = (int(dimensions['width']), int(dimensions['height']))
-        
+        svg_width = int(dimensions['width'])
+        svg_height = int(dimensions['height'])
+        image_size = (svg_width, svg_height)
+
+        print(f"📐 Original SVG dimensions: {svg_width}×{svg_height}")
+
         # Get tiles that overlap with ROI
         tiles_data = self.state.state.tiles_data
         if not tiles_data:
@@ -404,12 +414,12 @@ class EventHandlers:
     
     def _process_single_tile(self, row: int, col: int):
         """
-        Process a single tile.
-        
+        Process a single tile with AI analysis.
+
         Args:
             row: Tile row
             col: Tile column
-            
+
         Returns:
             Analysis result dictionary
         """
@@ -417,39 +427,93 @@ class EventHandlers:
             # Generate tile image
             svg_path = self.state.get_svg_path()
             grid_config = self.state.state.grid_config
-            
+
             if not svg_path or not grid_config:
                 return None
-            
+
+            # Generate tile at full resolution for AI analysis (512px)
             tile_image = self.tile_gen.generate_tile_on_demand(
                 svg_path,
                 row,
                 col,
-                grid_config
+                grid_config,
+                resolution_override=512  # Full resolution for AI
             )
-            
+
             if not tile_image:
                 return None
-            
-            # Analyze with AI (TODO: Implement actual AI analysis)
-            # For now, create a placeholder result
-            result = {
-                'success': True,
-                'has_issues': False,
-                'analysis': f"Placeholder analysis for tile ({row}, {col})",
-                'summary': 'Not yet analyzed'
-            }
-            
-            # Update state
-            self.state.add_tile_metadata(row, col, result.get('analysis', ''))
-            
+
+            # Perform AI analysis if available
+            if self.gemini and self.analyzer:
+                try:
+                    from core.ai_analyzer.prompts import DISCONTINUITY_ANALYSIS_PROMPT, get_classification_prompt
+
+                    # Step 1: Detailed analysis with Gemini Pro
+                    print(f"🤖 Analyzing tile ({row},{col}) with Gemini Pro...")
+                    analysis_text = self.gemini.analyze_detailed(
+                        tile_image,
+                        DISCONTINUITY_ANALYSIS_PROMPT
+                    )
+
+                    # Step 2: Binary classification with Gemini Flash
+                    print(f"⚡ Classifying tile ({row},{col}) with Gemini Flash...")
+                    classification_prompt = get_classification_prompt(analysis_text)
+                    classification = self.gemini.classify(
+                        analysis_text,
+                        classification_prompt
+                    )
+
+                    # Determine if there are issues
+                    has_issues = 'discontinuity' in classification.lower()
+
+                    result = {
+                        'success': True,
+                        'has_issues': has_issues,
+                        'analysis': analysis_text,
+                        'classification': classification,
+                        'summary': f"{'⚠️ Discontinuity' if has_issues else '✅ Continuous'}"
+                    }
+
+                    print(f"{'⚠️' if has_issues else '✅'} Tile ({row},{col}): {result['summary']}")
+
+                except Exception as ai_error:
+                    print(f"❌ AI analysis error for tile ({row},{col}): {ai_error}")
+                    result = {
+                        'success': False,
+                        'has_issues': False,
+                        'analysis': f"AI analysis failed: {str(ai_error)}",
+                        'summary': 'AI Error'
+                    }
+            else:
+                # No AI available - just mark as processed
+                result = {
+                    'success': True,
+                    'has_issues': False,
+                    'analysis': f"Tile ({row}, {col}) - AI not available",
+                    'summary': 'No AI'
+                }
+
+            # Update state with analysis result and classification
+            self.state.add_tile_metadata(
+                row,
+                col,
+                result.get('analysis', ''),
+                result.get('classification', None)
+            )
+
+            # Update visual status on layout
+            if result.get('classification'):
+                self._call_ui('update_tile_status', row, col, result.get('classification'))
+
             # Append result
             self._call_ui('append_result', f"Tile ({row},{col}): {result.get('summary', 'Analyzed')}")
-            
+
             return result
-            
+
         except Exception as e:
-            print(f"Error processing tile ({row}, {col}): {e}")
+            print(f"❌ Error processing tile ({row}, {col}): {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def handle_cancel_processing(self):
@@ -544,19 +608,19 @@ class EventHandlers:
     def _on_roi_selected(self, coords):
         """
         Callback when ROI is selected.
-        
+
         Args:
             coords: Tuple of (x1, y1, x2, y2)
         """
         x1, y1, x2, y2 = coords
-        
+
         # Create ROI
         roi_region = self.roi_storage.add_region((x1, y1), (x2, y2))
-        
+
         # Update UI
         self._call_ui('add_roi_to_list', f"ROI_{roi_region.id}: ({x1}, {y1}) to ({x2}, {y2})")
-        self._call_ui('update_status', f"ROI selected: ROI_{roi_region.id}")
-        self._call_ui('disable_roi_selection')
+        self._call_ui('update_status', f"ROI selected: ROI_{roi_region.id} - Draw more or click 'Select ROI' to exit")
+        # Keep ROI selection mode active to allow multiple ROI selections
     
     def handle_roi_analyze(self):
         """Handle ROI analysis"""
@@ -617,16 +681,26 @@ class EventHandlers:
                 return
             
             print(f"📄 SVG path: {svg_path}")
-            self._call_ui('update_status', f"Loading tile {tile_index} (row {row}, col {col})...")
-            
-            # Generate tile on demand
-            print(f"🔧 Generating tile on demand...")
-            tile_image = self.tile_gen.generate_tile_on_demand(
-                svg_path=svg_path,
-                row=row,
-                col=col,
-                grid_config=grid_config
-            )
+
+            # Check cache first for instant display (384px preview resolution)
+            preview_resolution = 384
+            cached_tile = self.tile_cache.get(row, col, preview_resolution)
+            if cached_tile:
+                print(f"⚡ Using cached tile ({row}, {col}) @ {preview_resolution}px - instant!")
+                self._call_ui('update_status', f"✅ Tile {tile_index} (row {row}, col {col}) - cached")
+                tile_image = cached_tile
+            else:
+                print(f"🔧 Generating tile on demand...")
+                self._call_ui('update_status', f"⏳ Loading tile {tile_index} (row {row}, col {col})...")
+
+                # Generate tile on demand with lower resolution for faster preview
+                tile_image = self.tile_gen.generate_tile_on_demand(
+                    svg_path=svg_path,
+                    row=row,
+                    col=col,
+                    grid_config=grid_config,
+                    resolution_override=preview_resolution  # Lower res for faster click-to-view
+                )
             
             print(f"📦 Tile image received: {tile_image is not None}")
             if tile_image:
@@ -639,14 +713,23 @@ class EventHandlers:
                 
                 # Get AI result if available (check if tile has been analyzed)
                 ai_result = 'Not yet analyzed - Click "Process All Tiles" or "Process Selected Regions"'
-                
+
                 # Check if this tile has been analyzed
                 tile_metadata = None
+                print(f"🔍 Checking analysis for tile ({row},{col})")
+                print(f"   Total tiles in state: {len(self.state.state.tiles_data)}")
+
                 for tile in self.state.state.tiles_data:
-                    if tile.row == row and tile.col == col and tile.analyzed:
-                        ai_result = tile.ai_result or ai_result
-                        tile_metadata = tile
+                    if tile.row == row and tile.col == col:
+                        print(f"   Found tile metadata: analyzed={tile.analyzed}, has_result={bool(tile.ai_result)}")
+                        if tile.analyzed and tile.ai_result:
+                            ai_result = tile.ai_result
+                            tile_metadata = tile
+                            print(f"   ✅ Using AI result (length: {len(ai_result)} chars)")
                         break
+
+                if not tile_metadata:
+                    print(f"   ⚠️ No analysis found for tile ({row},{col})")
                 
                 # Display in tile review panel
                 print(f"✅ Displaying tile in Section 4...")
