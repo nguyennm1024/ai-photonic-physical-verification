@@ -35,6 +35,9 @@ class SummaryPanel(ttk.LabelFrame):
     
     def _setup_widgets(self):
         """Create and layout widgets"""
+        # Configure grid to expand
+        self.grid_columnconfigure(1, weight=1)
+
         # Create labels in grid
         # Total tiles
         ttk.Label(self, text="Total Tiles:").grid(
@@ -42,28 +45,28 @@ class SummaryPanel(ttk.LabelFrame):
         )
         self.total_label = ttk.Label(self, text="0")
         self.total_label.grid(row=0, column=1, sticky='w', padx=5, pady=2)
-        
+
         # Tiles with issues
         ttk.Label(self, text="Issues Found:").grid(
             row=1, column=0, sticky='w', padx=5, pady=2
         )
         self.issues_label = ttk.Label(self, text="0", foreground='red')
         self.issues_label.grid(row=1, column=1, sticky='w', padx=5, pady=2)
-        
+
         # Clean tiles
         ttk.Label(self, text="Clean Tiles:").grid(
             row=2, column=0, sticky='w', padx=5, pady=2
         )
         self.clean_label = ttk.Label(self, text="0", foreground='green')
         self.clean_label.grid(row=2, column=1, sticky='w', padx=5, pady=2)
-        
+
         # Processing time
         ttk.Label(self, text="Processing Time:").grid(
             row=3, column=0, sticky='w', padx=5, pady=2
         )
         self.time_label = ttk.Label(self, text="0s")
         self.time_label.grid(row=3, column=1, sticky='w', padx=5, pady=2)
-        
+
         # Status
         ttk.Label(self, text="Status:").grid(
             row=4, column=0, sticky='w', padx=5, pady=2
