@@ -417,3 +417,66 @@ personal_config.py
 functions_understanding.md
 implementation_plan.md
 PHASE_1_SUMMARY.md
+
+# =============================================================================
+# Redundant Documentation Files
+# =============================================================================
+
+# Refactoring documentation (temporary files)
+REFACTORING_DESIGN.md
+REFACTORING_PROGRESS.md
+REFACTORING_COMPLETE.md
+REFACTORING_ISSUES.md
+FIX_PLAN.md
+CORRECT_WORKFLOW.md
+IMPROVEMENTS_MADE.md
+ERRORS_FIXED.md
+STATUS.md
+
+# UI documentation (temporary files)
+UI_IMPROVEMENTS.md
+UI_REORGANIZATION.md
+BEFORE_AFTER_UI.md
+
+# Installation documentation (consolidated into INSTALLATION.md)
+INSTALLATION_CHECKLIST.md
+INSTALLATION_NOTES_SUMMARY.md
+DOCUMENTATION_STRUCTURE.md
+INSTALLATION_REORGANIZATION_SUMMARY.md
+
+# Test result documentation (temporary files)
+TEST_RESULTS.md
+
+# =============================================================================
+# Old/Backup Files
+# =============================================================================
+
+# Original monolithic application (backup)
+layout_verification_app_OLD.py
+
+# Generated SVG files (should be regenerated)
+1Kpolyg_layout.svg
+Nexus_Sample2_layout.svg
+
+# =============================================================================
+# Test Files (Development Only)
+# =============================================================================
+
+# Unit test files (keep for development, but can be ignored if not needed)
+test_modules.py
+test_event_handlers.py
+test_integration.py
+test_real_gds.py
+test_ui_components.py
+
+# =============================================================================
+# Unused UI Components
+# =============================================================================
+
+# Old UI components that are no longer used
+ui/components/roi_controls.py
+ui/components/tile_viewer.py
+
+# Empty handler directories
+ui/handlers/
+ui/styles/
