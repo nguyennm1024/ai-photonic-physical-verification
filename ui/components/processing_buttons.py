@@ -88,10 +88,10 @@ class ProcessingButtons(ttk.LabelFrame):
             state='disabled'
         )
         self.cancel_button.pack(padx=5, pady=3, fill=tk.X)
-        
-        # Status label
-        self.status_label = ttk.Label(self, text="")
-        self.status_label.pack(padx=5, pady=2)
+
+        # Status label - wrappable
+        self.status_label = ttk.Label(self, text="", wraplength=300)
+        self.status_label.pack(padx=5, pady=2, fill=tk.X)
     
     def bind_generate_command(self, callback: Callable[[], None]):
         """
