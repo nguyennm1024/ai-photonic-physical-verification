@@ -1,277 +1,309 @@
+#!/usr/bin/env python3
 """
-Main Entry Point for Layout Verification App
+Layout Verification Application - Main Entry Point
+==================================================
 
-This module serves as the main entry point for the refactored application.
-It maintains the same initialization sequence as the original application.
+Refactored modular architecture with clean separation between:
+- Core business logic (core/)
+- UI components (ui/)
+- Utility functions (utils/)
+
+Author: William (Refactored by AI Assistant)
+Date: 2025-10-07
 """
 
 import tkinter as tk
 from tkinter import ttk
-from core.app_state.state_manager import AppStateManager
-from core.app_state.state_validator import StateValidator
-from core.file_manager.file_manager import FileManager
+import os
+import sys
+
+# Import core modules
+from core.file_manager import GDSLoader, SVGConverter, SVGParser
+from core.tile_system import TileGenerator, TileCache
+from core.ai_analyzer import GeminiClient, AnalysisEngine, ParallelAnalyzer
+from core.roi_manager import ROIStorage, ROICalculator
+from core.app_state import StateManager
+
+# Import UI components
+from ui.components import (
+    FileControls,
+    GridConfigPanel,
+    ProcessingButtons,
+    TileReviewPanel,
+    AnalysisPanel,
+    ImageCanvas,
+    SummaryPanel
+)
+from ui.event_handlers import EventHandlers
+from ui.modern_theme import ModernTheme
 
 
 class LayoutVerificationApp:
     """
-    Main application class that serves as a facade for the modular components.
+    Main application class - integrates all modules and UI components.
     
-    This class maintains the same API as the original LayoutVerificationApp
-    while delegating functionality to the new modular components.
+    This refactored version maintains clean separation of concerns:
+    - Core logic is handled by core modules
+    - UI is componentized in ui/components
+    - Event handling bridges UI and core via ui/event_handlers
     """
     
     def __init__(self, root):
         """
-        Initialize the main application with GUI root window and set up all state variables.
+        Initialize the application.
         
         Args:
-            root: Tkinter root window
+            root: tkinter root window
         """
         self.root = root
-        self.root.title("Interactive Layout Verification System")
+        self.root.title("Layout Verification System (Refactored)")
         self.root.geometry("1400x900")
         
-        # Initialize state management
-        self.state_manager = AppStateManager()
-        self.state_validator = StateValidator(self.state_manager)
+        # Initialize core modules
+        self._init_core_modules()
         
-        # Initialize file management with configurable output directory
-        import os
-        # Use current project directory for output, or create an 'output' subdirectory
-        output_dir = os.path.join(os.getcwd(), "output")
-        os.makedirs(output_dir, exist_ok=True)
-        self.file_manager = FileManager(output_directory=output_dir)
+        # Initialize event handlers
+        self._init_event_handlers()
         
-        # Initialize AI models (placeholder for now)
-        self._initialize_ai_models()
-        
-        # Setup UI (placeholder for now)
+        # Setup UI
         self._setup_ui()
         
-        # Start checking queue (placeholder for now)
-        self._start_queue_monitoring()
+        # Bind UI callbacks to event handlers
+        self._bind_callbacks()
+        
+        print("✅ Application initialized successfully")
     
-    def _initialize_ai_models(self):
-        """Initialize AI models (placeholder implementation)"""
-        # This will be implemented in Phase 4
-        print("🔧 AI models initialization - to be implemented in Phase 4")
+    def _init_core_modules(self):
+        """Initialize all core business logic modules"""
+        # State management
+        self.state_mgr = StateManager()
+        
+        # File operations
+        self.gds_loader = GDSLoader()
+        self.svg_converter = SVGConverter()
+        self.svg_parser = SVGParser()
+        
+        # Tile system
+        self.tile_generator = TileGenerator(self.svg_converter)
+        self.tile_cache = TileCache()
+        
+        # AI analyzer (optional - requires API key)
+        self.gemini_client = None
+        self.analysis_engine = None
+        self.parallel_analyzer = None
+        
+        api_key = os.getenv('GOOGLE_API_KEY')
+        if api_key:
+            try:
+                self.gemini_client = GeminiClient(api_key)
+                self.analysis_engine = AnalysisEngine(self.gemini_client, self.tile_generator)
+                self.parallel_analyzer = ParallelAnalyzer(self.analysis_engine)
+                print("✅ AI analyzer initialized")
+            except Exception as e:
+                print(f"⚠️  AI analyzer not available: {e}")
+        else:
+            print("⚠️  GOOGLE_API_KEY not set - AI features disabled")
+        
+        # ROI management
+        self.roi_storage = ROIStorage()
+        self.roi_calculator = ROICalculator()
+    
+    def _init_event_handlers(self):
+        """Initialize event handler layer"""
+        self.handlers = EventHandlers(
+            state_manager=self.state_mgr,
+            gds_loader=self.gds_loader,
+            svg_converter=self.svg_converter,
+            svg_parser=self.svg_parser,
+            tile_generator=self.tile_generator,
+            tile_cache=self.tile_cache,
+            gemini_client=self.gemini_client,
+            analysis_engine=self.analysis_engine,
+            roi_storage=self.roi_storage,
+            roi_calculator=self.roi_calculator
+        )
     
     def _setup_ui(self):
-        """Setup the user interface (placeholder implementation)"""
-        # This will be implemented in Phase 6
-        print("🔧 UI setup - to be implemented in Phase 6")
+        """Setup UI components"""
+        # Apply modern theme
+        ModernTheme.apply(self.root)
         
-        # Create a simple placeholder UI for Phase 1 testing
-        self._create_placeholder_ui()
-    
-    def _create_placeholder_ui(self):
-        """Create a simple placeholder UI for Phase 1 testing"""
-        # Main frame
-        main_frame = ttk.Frame(self.root)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        # Create main frames
+        self._create_layout()
         
-        # Title
-        title_label = ttk.Label(
-            main_frame, 
-            text="Layout Verification App - Phase 1", 
-            font=("Arial", 16, "bold")
-        )
-        title_label.pack(pady=(0, 20))
+        # Create left panel components
+        self.file_controls = FileControls(self.left_panel)
+        self.file_controls.pack(fill=tk.X, padx=5, pady=5)
         
-        # Status information
-        status_frame = ttk.LabelFrame(main_frame, text="Application Status")
-        status_frame.pack(fill=tk.X, pady=10)
+        self.grid_config = GridConfigPanel(self.left_panel)
+        self.grid_config.pack(fill=tk.X, padx=5, pady=5)
         
-        # State summary
-        state_summary = self.state_manager.get_state_summary()
+        self.processing_btns = ProcessingButtons(self.left_panel)
+        self.processing_btns.pack(fill=tk.X, padx=5, pady=5)
         
-        # File state
-        file_info = ttk.Label(
-            status_frame, 
-            text=f"GDS File: {state_summary['file_state']['gds_path'] or 'None'}"
-        )
-        file_info.pack(anchor=tk.W, padx=10, pady=5)
+        # Tile review panel (replaces old ROI controls)
+        self.tile_review = TileReviewPanel(self.left_panel)
+        self.tile_review.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Tile state
-        tile_info = ttk.Label(
-            status_frame, 
-            text=f"Tiles: {state_summary['tile_state']['total_tiles']} total"
-        )
-        tile_info.pack(anchor=tk.W, padx=10, pady=5)
+        # Create right panel components
+        self.image_canvas = ImageCanvas(self.right_top_panel)
+        self.image_canvas.pack(fill=tk.BOTH, expand=True)
         
-        # Analysis state
-        analysis_info = ttk.Label(
-            status_frame, 
-            text=f"Analysis: {state_summary['analysis_state']['state']}"
-        )
-        analysis_info.pack(anchor=tk.W, padx=10, pady=5)
+        self.analysis_panel = AnalysisPanel(self.right_bottom_panel)
+        self.analysis_panel.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # ROI state
-        roi_info = ttk.Label(
-            status_frame, 
-            text=f"ROI Mode: {state_summary['roi_state']['mode']}"
-        )
-        roi_info.pack(anchor=tk.W, padx=10, pady=5)
-        
-        # Phase information
-        phase_frame = ttk.LabelFrame(main_frame, text="Refactoring Progress")
-        phase_frame.pack(fill=tk.X, pady=10)
-        
-        phase_info = ttk.Label(
-            phase_frame,
-            text="✅ Phase 1: Core Infrastructure and State Management - COMPLETED\n"
-                 "✅ Phase 2: File Management System - COMPLETED\n"
-                 "🔧 Phase 3: Tile System Architecture - PENDING\n"
-                 "🔧 Phase 4: AI Analysis System - PENDING\n"
-                 "🔧 Phase 5: ROI System - PENDING\n"
-                 "🔧 Phase 6: UI Component Extraction - PENDING\n"
-                 "🔧 Phase 7: Integration and Facade Pattern - PENDING\n"
-                 "🔧 Phase 8: Optimization and Cleanup - PENDING"
-        )
-        phase_info.pack(anchor=tk.W, padx=10, pady=10)
-        
-        # Test buttons
-        test_frame = ttk.LabelFrame(main_frame, text="Phase 1 & 2 Tests")
-        test_frame.pack(fill=tk.X, pady=10)
-        
-        ttk.Button(
-            test_frame, 
-            text="Test State Validation", 
-            command=self._test_state_validation
-        ).pack(side=tk.LEFT, padx=5, pady=5)
-        
-        ttk.Button(
-            test_frame, 
-            text="Test State Changes", 
-            command=self._test_state_changes
-        ).pack(side=tk.LEFT, padx=5, pady=5)
-        
-        ttk.Button(
-            test_frame, 
-            text="Reset State", 
-            command=self._reset_state
-        ).pack(side=tk.LEFT, padx=5, pady=5)
-        
-        # File management tests
-        file_test_frame = ttk.LabelFrame(main_frame, text="File Management Tests")
-        file_test_frame.pack(fill=tk.X, pady=10)
-        
-        ttk.Button(
-            file_test_frame, 
-            text="Load GDS File", 
-            command=self._test_load_gds
-        ).pack(side=tk.LEFT, padx=5, pady=5)
-        
-        ttk.Button(
-            file_test_frame, 
-            text="Generate SVG", 
-            command=self._test_generate_svg
-        ).pack(side=tk.LEFT, padx=5, pady=5)
-        
-        ttk.Button(
-            file_test_frame, 
-            text="Test File Validation", 
-            command=self._test_file_validation
-        ).pack(side=tk.LEFT, padx=5, pady=5)
+        self.summary_panel = SummaryPanel(self.right_bottom_panel)
+        self.summary_panel.pack(fill=tk.X, padx=5, pady=5)
         
         # Status bar
         self.status_bar = ttk.Label(
-            self.root, 
-            text="Phase 2: File Management System Ready", 
-            relief=tk.SUNKEN
+            self.root,
+            text="Ready",
+            relief=tk.FLAT,
+            anchor=tk.W,
+            padding=(5, 2)
         )
-        self.status_bar.pack(fill=tk.X, pady=(5, 0))
+        self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
     
-    def _test_state_validation(self):
-        """Test state validation functionality"""
-        is_valid, errors = self.state_validator.validate_complete_state()
-        if is_valid:
-            self.status_bar.config(text="✅ State validation passed")
-        else:
-            error_msg = "; ".join(errors[:3])  # Show first 3 errors
-            if len(errors) > 3:
-                error_msg += f" (+{len(errors) - 3} more)"
-            self.status_bar.config(text=f"❌ State validation failed: {error_msg}")
-    
-    def _test_state_changes(self):
-        """Test state change functionality"""
-        # Test setting some state values
-        self.state_manager.current_gds_path = "/test/path/file.gds"
-        self.state_manager.current_svg_path = "/test/path/file.svg"
-        self.status_bar.config(text="✅ State changes applied - check validation")
-    
-    def _reset_state(self):
-        """Reset application state"""
-        self.state_manager.reset_file_state()
-        self.state_manager.reset_analysis_state()
-        self.state_manager.reset_roi_state()
-        self.file_manager.reset()
-        self.status_bar.config(text="✅ Application state reset")
-    
-    def _test_load_gds(self):
-        """Test GDS file loading"""
-        success = self.file_manager.load_gds_file_dialog()
-        if success:
-            file_info = self.file_manager.get_file_display_info()
-            self.status_bar.config(text=f"✅ GDS loaded: {file_info}")
-        else:
-            self.status_bar.config(text="❌ GDS loading failed or cancelled")
-    
-    def _test_generate_svg(self):
-        """Test SVG generation"""
-        can_generate, errors = self.file_manager.can_generate_svg()
-        if not can_generate:
-            error_msg = "; ".join(errors[:2])
-            self.status_bar.config(text=f"❌ Cannot generate SVG: {error_msg}")
-            return
+    def _create_layout(self):
+        """Create main layout structure"""
+        # Main horizontal split
+        self.paned_window = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
+        self.paned_window.pack(fill=tk.BOTH, expand=True)
         
-        success = self.file_manager.generate_svg()
-        if success:
-            svg_info = self.file_manager.get_svg_display_info()
-            self.status_bar.config(text=f"✅ SVG generated: {svg_info}")
-        else:
-            self.status_bar.config(text="❌ SVG generation failed")
+        # Left panel (controls and tile viewer)
+        self.left_panel = ttk.Frame(self.paned_window, width=400)
+        self.paned_window.add(self.left_panel, weight=1)
+        
+        # Right panel (image and analysis)
+        self.right_panel = ttk.Frame(self.paned_window)
+        self.paned_window.add(self.right_panel, weight=3)
+        
+        # Right panel vertical split
+        self.right_paned = ttk.PanedWindow(self.right_panel, orient=tk.VERTICAL)
+        self.right_paned.pack(fill=tk.BOTH, expand=True)
+        
+        self.right_top_panel = ttk.Frame(self.right_paned)
+        self.right_paned.add(self.right_top_panel, weight=2)
+        
+        self.right_bottom_panel = ttk.Frame(self.right_paned)
+        self.right_paned.add(self.right_bottom_panel, weight=1)
     
-    def _test_file_validation(self):
-        """Test file validation"""
-        is_valid, errors = self.file_manager.validate_current_state()
-        if is_valid:
-            self.status_bar.config(text="✅ File validation passed")
-        else:
-            error_msg = "; ".join(errors[:2])
-            self.status_bar.config(text=f"❌ File validation failed: {error_msg}")
+    def _bind_callbacks(self):
+        """Bind UI callbacks to event handlers"""
+        # File controls
+        self.file_controls.bind_load_command(self.handlers.handle_load_gds)
+        
+        # Processing buttons (includes grid generation and ROI selection)
+        self.processing_btns.bind_generate_command(self._handle_generate_with_config)
+        self.processing_btns.bind_process_all_command(self.handlers.handle_process_all_tiles)
+        self.processing_btns.bind_select_roi_command(self.handlers.handle_roi_select_toggle)
+        self.processing_btns.bind_process_roi_command(self.handlers.handle_process_roi_tiles)
+        self.processing_btns.bind_cancel_command(self.handlers.handle_cancel_processing)
+        
+        # Tile review panel
+        self.tile_review.bind_prev_command(self.handlers.handle_prev_tile)
+        self.tile_review.bind_next_command(self.handlers.handle_next_tile)
+        self.tile_review.bind_classify_command(self.handlers.handle_classify_tile)
     
-    def _start_queue_monitoring(self):
-        """Start the analysis queue monitoring (placeholder implementation)"""
-        # This will be implemented in Phase 1.4
-        print("🔧 Queue monitoring - to be implemented in Phase 1.4")
+    def _handle_generate_with_config(self):
+        """Get config from grid panel and call handler"""
+        config = self.grid_config.get_config()
+        self.handlers.handle_generate_grid(config['rows'], config['cols'], config['overlap'])
+        
+        # Bind event handler UI callbacks
+        self.handlers.bind_ui_callback('update_file_info', self._update_file_info)
+        self.handlers.bind_ui_callback('update_status', self._update_status)
+        self.handlers.bind_ui_callback('update_grid_info', self._update_grid_info)
+        self.handlers.bind_ui_callback('set_progress', self._set_progress)
+        self.handlers.bind_ui_callback('append_result', self._append_result)
+        self.handlers.bind_ui_callback('display_image', self._display_image)
+        self.handlers.bind_ui_callback('enable_roi_selection', self._enable_roi_selection)
+        self.handlers.bind_ui_callback('disable_roi_selection', self._disable_roi_selection)
+        self.handlers.bind_ui_callback('add_roi_to_list', self._add_roi_to_list)
+        self.handlers.bind_ui_callback('update_summary', self._update_summary)
+        self.handlers.bind_ui_callback('display_tile_review', self._display_tile_review)
+    
+    # UI callback implementations
+    def _update_file_info(self, file_path: str):
+        """Update file info display"""
+        self.file_controls.set_file_info(file_path)
+    
+    def _update_status(self, message: str):
+        """Update status bar"""
+        self.status_bar.config(text=message)
+        self.root.update_idletasks()
+    
+    def _update_grid_info(self, message: str):
+        """Update grid configuration info"""
+        self.grid_config.set_info(message)
+    
+    def _set_progress(self, value: int, maximum: int = 100):
+        """Update progress bar"""
+        self.analysis_panel.set_progress(value, maximum)
+        self.analysis_panel.set_progress_text(f"{value}/{maximum}")
+        self.root.update_idletasks()
+    
+    def _append_result(self, text: str):
+        """Append text to results panel"""
+        self.analysis_panel.append_result(text)
+    
+    def _display_image(self, image, grid_config=None):
+        """Display image on canvas with optional grid overlay"""
+        self.image_canvas.display_image(image, grid_config)
+    
+    def _enable_roi_selection(self, callback):
+        """Enable ROI selection on canvas"""
+        self.image_canvas.enable_roi_selection(callback)
+    
+    def _disable_roi_selection(self):
+        """Disable ROI selection"""
+        self.image_canvas.disable_roi_selection()
+        # ROI selection state is now managed by processing_btns
+    
+    def _add_roi_to_list(self, roi_text: str):
+        """Add ROI to list"""
+        # ROI list removed - just update status instead
+        self._update_status(f"ROI added: {roi_text}")
+    
+    def _update_summary(self, total: int, issues: int, clean: int, time_elapsed: float):
+        """Update summary panel"""
+        self.summary_panel.update_summary(total, issues, clean, time_elapsed)
+    
+    def _display_tile_review(self, image, row: int, col: int, index: int, ai_result: str = ""):
+        """Display tile in review panel"""
+        self.tile_review.display_tile(image, row, col, index, ai_result)
 
 
 def main():
-    """
-    Main application entry point with window configuration and styling.
-    
-    This function maintains the exact same initialization sequence as the original
-    application while using the new modular architecture.
-    """
-    # Create Tkinter root window
+    """Main application entry point"""
+    # Create root window
     root = tk.Tk()
     
-    # Configure UI styling
-    style = ttk.Style()
-    style.configure('Success.TButton', foreground='green')
-    style.configure('Warning.TButton', foreground='red')
+    # Set window icon if available
+    try:
+        # You can add an icon file later
+        pass
+    except:
+        pass
     
-        # Initialize main application (triggers __init__)
-    LayoutVerificationApp(root)
+    # Create application (theme is applied in _setup_ui)
+    app = LayoutVerificationApp(root)
     
     # Center window on screen
     root.update_idletasks()
-    x = (root.winfo_screenwidth() // 2) - (1400 // 2)
-    y = (root.winfo_screenheight() // 2) - (900 // 2)
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    x = (screen_width // 2) - (1400 // 2)
+    y = (screen_height // 2) - (900 // 2)
     root.geometry(f"1400x900+{x}+{y}")
     
-    # Start event loop (blocks until window closed)
+    # Minimum window size
+    root.minsize(1200, 700)
+    
+    # Run
+    print("🚀 Application started - Modern UI")
+    print("📝 Overlap is now in percentage (0-50%)")
     root.mainloop()
 
 
