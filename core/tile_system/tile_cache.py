@@ -25,36 +25,38 @@ class TileCache:
         self.max_size = max_size
         self.cache: Dict[str, Image.Image] = {}
     
-    def get(self, row: int, col: int) -> Optional[Image.Image]:
+    def get(self, row: int, col: int, resolution: int = 384) -> Optional[Image.Image]:
         """
         Get cached tile or None if not cached.
-        
+
         Args:
             row: Tile row index
             col: Tile column index
-            
+            resolution: Tile resolution (for cache key)
+
         Returns:
             PIL Image or None
         """
-        key = self._make_key(row, col)
+        key = self._make_key(row, col, resolution)
         return self.cache.get(key)
-    
-    def put(self, row: int, col: int, image: Image.Image):
+
+    def put(self, row: int, col: int, image: Image.Image, resolution: int = 384):
         """
         Cache tile image (with FIFO eviction if full).
-        
+
         Args:
             row: Tile row index
             col: Tile column index
             image: PIL Image to cache
+            resolution: Tile resolution (for cache key)
         """
         # Evict oldest if cache is full
         if len(self.cache) >= self.max_size:
             # Remove first (oldest) entry
             oldest_key = next(iter(self.cache))
             del self.cache[oldest_key]
-        
-        key = self._make_key(row, col)
+
+        key = self._make_key(row, col, resolution)
         self.cache[key] = image
     
     def clear(self):
@@ -65,7 +67,7 @@ class TileCache:
         """Get current cache size"""
         return len(self.cache)
     
-    def _make_key(self, row: int, col: int) -> str:
-        """Generate cache key from row and column"""
-        return f"{row}_{col}"
+    def _make_key(self, row: int, col: int, resolution: int = 384) -> str:
+        """Generate cache key from row, column, and resolution"""
+        return f"{row}_{col}_{resolution}"
 
