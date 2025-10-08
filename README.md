@@ -111,7 +111,7 @@ python main.py
 
 ![UI Example](figures/ui_example.png)
 
-*The modern, clean interface showing the dual-panel layout with controls on the left and interactive layout visualization on the right.*
+*The clean interface showing the dual-panel layout with controls on the left and interactive layout visualization on the right.*
 
 ### Guides
 - **[INSTALLATION.md](INSTALLATION.md)** - Complete installation guide with troubleshooting
