@@ -69,7 +69,7 @@ class LayoutVerificationApp:
             root: tkinter root window
         """
         self.root = root
-        self.root.title("Layout Verification System (Refactored)")
+        self.root.title("Layout Verification System")
         self.root.geometry("1400x900")
         
         # Initialize core modules
@@ -297,9 +297,9 @@ class LayoutVerificationApp:
         """Update summary panel"""
         self.summary_panel.update_summary(total, issues, clean, time_elapsed)
     
-    def _display_tile_review(self, image, row: int, col: int, index: int, ai_result: str = ""):
+    def _display_tile_review(self, image, row: int, col: int, index: int, ai_result: str = "", classification: str = None):
         """Display tile in review panel"""
-        self.tile_review.display_tile(image, row, col, index, ai_result)
+        self.tile_review.display_tile(image, row, col, index, ai_result, classification)
 
     def _update_tile_status(self, row: int, col: int, classification: str):
         """Update visual status of tile on layout"""
