@@ -447,6 +447,11 @@ INSTALLATION_REORGANIZATION_SUMMARY.md
 # Test result documentation (temporary files)
 TEST_RESULTS.md
 
+# Recent fixes documentation (temporary files)
+FIXES_APPLIED.md
+LATEST_FIXES.md
+TILE_ROI_FIXES.md
+
 # =============================================================================
 # Old/Backup Files
 # =============================================================================
