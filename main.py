@@ -12,8 +12,21 @@ Author: William (Refactored by AI Assistant)
 Date: 2025-10-07
 """
 
-import tkinter as tk
-from tkinter import ttk
+try:
+    import tkinter as tk
+    from tkinter import ttk
+except Exception as e:
+    raise SystemExit(
+        "Failed to import tkinter (Tcl/Tk).\n"
+        "Install Tcl/Tk and ensure Python has Tk support.\n\n"
+        "On macOS with Homebrew:\n"
+        "  brew install tcl-tk\n\n"
+        "If using uv-managed Python, upgrade it and recreate the venv:\n"
+        "  uv python upgrade --reinstall\n"
+        "  uv venv --clear .venv\n\n"
+        "You can test Tk with: python3 -m tkinter\n\n"
+        f"Original error: {e}"
+    )
 import os
 import sys
 
@@ -83,9 +96,9 @@ class LayoutVerificationApp:
         self.svg_converter = SVGConverter()
         self.svg_parser = SVGParser()
         
-        # Tile system
-        self.tile_generator = TileGenerator(self.svg_converter)
-        self.tile_cache = TileCache()
+        # Tile system - share cache between generator and app
+        self.tile_cache = TileCache(max_size=100)  # Increased cache size
+        self.tile_generator = TileGenerator(self.svg_converter, self.tile_cache)
         
         # AI analyzer (optional - requires API key)
         self.gemini_client = None
@@ -97,12 +110,20 @@ class LayoutVerificationApp:
             try:
                 self.gemini_client = GeminiClient(api_key)
                 self.analysis_engine = AnalysisEngine(self.gemini_client, self.tile_generator)
-                self.parallel_analyzer = ParallelAnalyzer(self.analysis_engine)
-                print("✅ AI analyzer initialized")
+                self.parallel_analyzer = ParallelAnalyzer(self.gemini_client, self.tile_generator)
+                print("✅ AI analyzer initialized with Gemini Pro + Flash")
+                print("   🤖 Gemini Pro: Detailed discontinuity analysis")
+                print("   ⚡ Gemini Flash: Fast binary classification")
             except Exception as e:
-                print(f"⚠️  AI analyzer not available: {e}")
+                print(f"❌ AI analyzer initialization failed: {e}")
+                print(f"   Check your GOOGLE_API_KEY and internet connection")
+                import traceback
+                traceback.print_exc()
         else:
             print("⚠️  GOOGLE_API_KEY not set - AI features disabled")
+            print("   To enable AI analysis:")
+            print("   1. Get API key: https://makersuite.google.com/app/apikey")
+            print("   2. Set environment: export GOOGLE_API_KEY='your_key_here'")
         
         # ROI management
         self.roi_storage = ROIStorage()
@@ -170,11 +191,11 @@ class LayoutVerificationApp:
         # Main horizontal split
         self.paned_window = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
         self.paned_window.pack(fill=tk.BOTH, expand=True)
-        
+
         # Left panel (controls and tile viewer)
-        self.left_panel = ttk.Frame(self.paned_window, width=400)
+        self.left_panel = ttk.Frame(self.paned_window)
         self.paned_window.add(self.left_panel, weight=1)
-        
+
         # Right panel (image and analysis)
         self.right_panel = ttk.Frame(self.paned_window)
         self.paned_window.add(self.right_panel, weight=3)
@@ -222,6 +243,8 @@ class LayoutVerificationApp:
         self.handlers.bind_ui_callback('add_roi_to_list', self._add_roi_to_list)
         self.handlers.bind_ui_callback('update_summary', self._update_summary)
         self.handlers.bind_ui_callback('display_tile_review', self._display_tile_review)
+        self.handlers.bind_ui_callback('update_tile_status', self._update_tile_status)
+        self.handlers.bind_ui_callback('clear_tile_status', self._clear_tile_status)
     
     def _handle_generate_with_config(self):
         """Get config from grid panel and call handler"""
@@ -252,9 +275,9 @@ class LayoutVerificationApp:
         """Append text to results panel"""
         self.analysis_panel.append_result(text)
     
-    def _display_image(self, image, grid_config=None):
-        """Display image on canvas with optional grid overlay"""
-        self.image_canvas.display_image(image, grid_config)
+    def _display_image(self, image, grid_config=None, svg_dimensions=None):
+        """Display image on canvas with optional grid overlay and SVG dimensions"""
+        self.image_canvas.display_image(image, grid_config, svg_dimensions)
     
     def _enable_roi_selection(self, callback):
         """Enable ROI selection on canvas"""
@@ -278,11 +301,35 @@ class LayoutVerificationApp:
         """Display tile in review panel"""
         self.tile_review.display_tile(image, row, col, index, ai_result)
 
+    def _update_tile_status(self, row: int, col: int, classification: str):
+        """Update visual status of tile on layout"""
+        self.image_canvas.update_tile_status(row, col, classification, analyzed=True)
+
+    def _clear_tile_status(self):
+        """Clear all tile status overlays"""
+        self.image_canvas.clear_tile_status()
+
 
 def main():
     """Main application entry point"""
     # Create root window
-    root = tk.Tk()
+    try:
+        root = tk.Tk()
+    except Exception as e:
+        raise SystemExit(
+            "Tcl/Tk runtime is not available.\n"
+            "Ensure Tcl/Tk libraries are installed and discoverable.\n\n"
+            "On macOS with Homebrew:\n"
+            "  brew install tcl-tk\n\n"
+            "If Python still cannot find Tcl/Tk, set environment variables before running:\n"
+            "  export TCL_LIBRARY=/opt/homebrew/opt/tcl-tk/lib/tcl9.0:/opt/homebrew/opt/tcl-tk/lib/tcl8.6\n"
+            "  export TK_LIBRARY=/opt/homebrew/opt/tcl-tk/lib/tk9.0:/opt/homebrew/opt/tcl-tk/lib/tk8.6\n"
+            "  export PATH=/opt/homebrew/opt/tcl-tk/bin:$PATH\n\n"
+            "If using uv-managed Python, upgrade and recreate the venv:\n"
+            "  uv python upgrade --reinstall && uv venv --clear .venv\n\n"
+            "Test Tk availability with: python3 -m tkinter\n\n"
+            f"Original error: {e}"
+        )
     
     # Set window icon if available
     try:
@@ -302,8 +349,8 @@ def main():
     y = (screen_height // 2) - (900 // 2)
     root.geometry(f"1400x900+{x}+{y}")
     
-    # Minimum window size
-    root.minsize(1200, 700)
+    # Minimum window size - responsive but not too small
+    root.minsize(800, 500)
     
     # Run
     print("🚀 Application started - Modern UI")
