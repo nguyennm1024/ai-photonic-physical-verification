@@ -144,6 +144,10 @@ class StateManager:
         """Update grid configuration"""
         self.state.grid_config = grid_config
     
+    def get_grid_config(self) -> Optional[GridConfig]:
+        """Get current grid configuration"""
+        return self.state.grid_config
+    
     def create_grid_config(self, rows: int, cols: int, overlap: int) -> GridConfig:
         """
         Create and set grid configuration.
