@@ -169,14 +169,15 @@ class StateManager:
         self.set_grid_config(grid_config)
         return grid_config
     
-    def add_tile_metadata(self, row: int, col: int, ai_result: str):
+    def add_tile_metadata(self, row: int, col: int, ai_result: str, classification: Optional[str] = None):
         """
-        Add or update tile metadata.
-        
+        Add or update tile metadata with AI result.
+
         Args:
             row: Tile row
             col: Tile column
             ai_result: AI analysis result
+            classification: Optional classification ('continuity' or 'discontinuity')
         """
         # Find or create tile metadata
         tile_found = False
@@ -184,9 +185,12 @@ class StateManager:
             if tile.row == row and tile.col == col:
                 tile.ai_result = ai_result
                 tile.analyzed = True
+                if classification:
+                    tile.classification = classification
                 tile_found = True
+                print(f"✅ Updated tile ({row},{col}): analyzed=True, classification={classification}")
                 break
-        
+
         if not tile_found:
             # Create new tile metadata
             tile = TileMetadata(
@@ -195,9 +199,11 @@ class StateManager:
                 col=col,
                 virtual=True,
                 analyzed=True,
-                ai_result=ai_result
+                ai_result=ai_result,
+                classification=classification
             )
             self.state.tiles_data.append(tile)
+            print(f"✅ Created tile ({row},{col}) metadata: classification={classification}")
     
     def set_tiles_data(self, tiles_data: List[TileMetadata]):
         """Update tiles data"""
