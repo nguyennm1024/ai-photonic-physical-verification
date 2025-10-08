@@ -71,10 +71,10 @@ CLASSIFICATION_PROMPT_TEMPLATE = """Based on this photonic layout analysis resul
 Analysis result: {analysis_result}
 
 Instructions:
-- If the analysis indicates there are no waveguides, respond with: continuity
+- If the analysis indicates there are no waveguides, respond with: no_waveguide
 - If the analysis indicates any discontinuity, misalignment, step, break, gap, or problem, respond with: discontinuity
 - If the analysis indicates the waveguide is continuous, smooth, and properly aligned, respond with: continuity
-- Respond with ONLY ONE WORD, no explanation, no punctuation, just: discontinuity OR continuity"""
+- Respond with ONLY ONE WORD, no explanation, no punctuation, just: discontinuity OR continuity OR no_waveguide"""
 
 
 # =============================================================================
