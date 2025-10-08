@@ -45,10 +45,10 @@ class FileControls(ttk.LabelFrame):
             command=self._on_load_clicked
         )
         self.load_button.pack(side=tk.LEFT, padx=5, pady=5)
-        
-        # File info label
-        self.file_info_label = ttk.Label(self, text="No file loaded")
-        self.file_info_label.pack(side=tk.LEFT, padx=10)
+
+        # File info label (wraplength will be set dynamically)
+        self.file_info_label = ttk.Label(self, text="No file loaded", wraplength=250)
+        self.file_info_label.pack(side=tk.LEFT, padx=10, fill=tk.X, expand=True)
     
     def bind_load_command(self, callback: Callable[[str], None]):
         """
