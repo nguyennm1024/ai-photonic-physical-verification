@@ -76,6 +76,9 @@ class ImageCanvas(ttk.Frame):
         
         # Bind keyboard events for ROI deletion
         self.canvas.mpl_connect('key_press_event', self._on_key_press)
+        
+        # Test: Add a simple click handler to verify events work
+        print("🔧 Mouse events bound to canvas")
     
     def display_image(self, image, grid_config=None):
         """
@@ -204,7 +207,10 @@ class ImageCanvas(ttk.Frame):
     
     def _on_mouse_press(self, event):
         """Handle mouse press for ROI selection/selection or tile click"""
+        print("🖱️  MOUSE PRESS EVENT TRIGGERED!")
+        
         if event.inaxes != self.ax:
+            print("❌ Click outside axes")
             return
         
         click_x, click_y = event.xdata, event.ydata
@@ -374,18 +380,26 @@ class ImageCanvas(ttk.Frame):
         Returns:
             Rectangle object if found, None otherwise
         """
-        for roi_rect in self.roi_rectangles:
+        print(f"🔍 Checking {len(self.roi_rectangles)} ROIs for point ({x:.1f}, {y:.1f})")
+        
+        for i, roi_rect in enumerate(self.roi_rectangles):
             # Get rectangle bounds
             rect_x = roi_rect.get_x()
             rect_y = roi_rect.get_y()
             rect_width = roi_rect.get_width()
             rect_height = roi_rect.get_height()
             
+            print(f"   ROI {i}: x={rect_x:.1f}, y={rect_y:.1f}, w={rect_width:.1f}, h={rect_height:.1f}")
+            
             # Check if point is inside rectangle
             if (rect_x <= x <= rect_x + rect_width and 
                 rect_y <= y <= rect_y + rect_height):
+                print(f"   ✅ Point is inside ROI {i}")
                 return roi_rect
+            else:
+                print(f"   ❌ Point is outside ROI {i}")
         
+        print(f"   📭 Point not found in any ROI")
         return None
     
     def _toggle_roi_selection(self, roi_rect, event):
