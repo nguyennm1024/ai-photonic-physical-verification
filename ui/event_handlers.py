@@ -586,4 +586,84 @@ class EventHandlers:
         """Handle ROI clearing"""
         self.roi_storage.clear_all()
         self._call_ui('update_status', "ROI cleared")
+    
+    def handle_tile_click(self, row: int, col: int):
+        """
+        Handle tile click from layout.
+        
+        Args:
+            row: Tile row
+            col: Tile column
+        """
+        print(f"🖱️  Tile clicked: row={row}, col={col}")
+        
+        try:
+            # Get grid config
+            grid_config = self.state.get_grid_config()
+            if not grid_config:
+                print("❌ No grid configured")
+                messagebox.showwarning("No Grid", "Please generate a grid first")
+                return
+            
+            # Calculate tile index
+            tile_index = row * grid_config.cols + col
+            print(f"📍 Tile index: {tile_index}")
+            
+            # Generate the tile image
+            svg_path = self.state.get_svg_path()
+            if not svg_path:
+                print("❌ No SVG path available")
+                messagebox.showwarning("No File", "Please load a GDS file first")
+                return
+            
+            print(f"📄 SVG path: {svg_path}")
+            self._call_ui('update_status', f"Loading tile {tile_index} (row {row}, col {col})...")
+            
+            # Generate tile on demand
+            print(f"🔧 Generating tile on demand...")
+            tile_data = self.tile_gen.generate_tile_on_demand(
+                svg_path=svg_path,
+                row=row,
+                col=col,
+                grid_config=grid_config
+            )
+            
+            print(f"📦 Tile data received: {tile_data is not None}")
+            if tile_data:
+                print(f"   Has image: {tile_data.get('image') is not None}")
+            
+            if tile_data and tile_data.get('image'):
+                # Display tile in review panel
+                from PIL import Image
+                import io
+                import base64
+                
+                print(f"🖼️  Processing tile image...")
+                
+                # Decode base64 image if needed
+                if isinstance(tile_data['image'], str):
+                    img_data = base64.b64decode(tile_data['image'])
+                    image = Image.open(io.BytesIO(img_data))
+                else:
+                    image = tile_data['image']
+                
+                print(f"   Image size: {image.size}")
+                
+                # Get AI result if available
+                ai_result = tile_data.get('analysis', 'Not yet analyzed - Click "Process All Tiles" or "Process Selected Regions"')
+                
+                # Display in tile review panel
+                print(f"✅ Displaying tile in Section 4...")
+                self._call_ui('display_tile_review', image, row, col, tile_index, ai_result)
+                self._call_ui('update_status', f"✅ Displaying tile {tile_index} (row {row}, col {col})")
+                print(f"✅ Tile {tile_index} displayed successfully!")
+            else:
+                print(f"❌ Failed to generate tile ({row}, {col})")
+                messagebox.showerror("Error", f"Failed to generate tile at row {row}, col {col}")
+                
+        except Exception as e:
+            print(f"❌ Error handling tile click: {e}")
+            import traceback
+            traceback.print_exc()
+            messagebox.showerror("Error", f"Failed to display tile: {str(e)}")
 
