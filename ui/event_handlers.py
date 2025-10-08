@@ -713,6 +713,7 @@ class EventHandlers:
                 
                 # Get AI result if available (check if tile has been analyzed)
                 ai_result = 'Not yet analyzed - Click "Process All Tiles" or "Process Selected Regions"'
+                classification = None
 
                 # Check if this tile has been analyzed
                 tile_metadata = None
@@ -724,16 +725,17 @@ class EventHandlers:
                         print(f"   Found tile metadata: analyzed={tile.analyzed}, has_result={bool(tile.ai_result)}")
                         if tile.analyzed and tile.ai_result:
                             ai_result = tile.ai_result
+                            classification = getattr(tile, 'classification', None)
                             tile_metadata = tile
-                            print(f"   ✅ Using AI result (length: {len(ai_result)} chars)")
+                            print(f"   ✅ Using AI result (length: {len(ai_result)} chars), classification={classification}")
                         break
 
                 if not tile_metadata:
                     print(f"   ⚠️ No analysis found for tile ({row},{col})")
-                
+
                 # Display in tile review panel
                 print(f"✅ Displaying tile in Section 4...")
-                self._call_ui('display_tile_review', tile_image, row, col, tile_index, ai_result)
+                self._call_ui('display_tile_review', tile_image, row, col, tile_index, ai_result, classification)
                 self._call_ui('update_status', f"✅ Displaying tile {tile_index} (row {row}, col {col})")
                 print(f"✅ Tile {tile_index} displayed successfully!")
             else:
