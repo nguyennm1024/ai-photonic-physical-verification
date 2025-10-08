@@ -62,24 +62,32 @@ class TileGenerator:
         return tiles_data
     
     def generate_tile_on_demand(self, svg_path: str, row: int, col: int,
-                               grid_config: GridConfig) -> Optional[Image.Image]:
+                               grid_config: GridConfig,
+                               resolution_override: Optional[int] = None) -> Optional[Image.Image]:
         """
         Generate a single tile on-demand and return PIL Image.
         Uses caching to avoid regeneration.
-        
+
         Args:
             svg_path: Path to source SVG file
             row: Tile row index
             col: Tile column index
             grid_config: Grid configuration
-            
+            resolution_override: Optional resolution override (for faster preview)
+
         Returns:
             PIL Image or None if generation fails
         """
-        # Check cache first
-        cached_image = self.tile_cache.get(row, col)
+        # Determine resolution early for cache lookup
+        resolution = resolution_override if resolution_override else grid_config.resolution
+
+        # Check cache first - instant return
+        cached_image = self.tile_cache.get(row, col, resolution)
         if cached_image:
+            print(f"⚡ Cache HIT for tile ({row}, {col}) @ {resolution}px")
             return cached_image
+
+        print(f"💾 Cache MISS for tile ({row}, {col}) @ {resolution}px - generating...")
         
         try:
             # Parse SVG to get viewBox
@@ -100,7 +108,7 @@ class TileGenerator:
             # Calculate tile parameters
             rows, cols = grid_config.rows, grid_config.cols
             overlap = grid_config.overlap / 100.0
-            resolution = grid_config.resolution
+            # Resolution already determined above for cache lookup
             
             step_width = svg_width / cols
             step_height = svg_height / rows
@@ -111,8 +119,8 @@ class TileGenerator:
             x = svg_x + col * step_width
             y = svg_y + row * step_height
             
-            print(f"🔍 Generating tile ({row}, {col})")
-            print(f"   Tile position: x={x:.1f}, y={y:.1f}, size: {tile_width:.1f}×{tile_height:.1f}")
+            print(f"🔍 Generating tile ({row}, {col}) at {resolution}px resolution")
+            print(f"   Position: x={x:.1f}, y={y:.1f}, size: {tile_width:.1f}×{tile_height:.1f}")
             
             # Create temporary SVG tile
             with tempfile.NamedTemporaryFile(mode='w', suffix='.svg', delete=False) as temp_svg:
@@ -126,8 +134,9 @@ class TileGenerator:
             os.unlink(temp_svg_path)
             
             if tile_image:
-                # Cache the tile
-                self.tile_cache.put(row, col, tile_image)
+                # Cache the tile with resolution in key
+                self.tile_cache.put(row, col, tile_image, resolution)
+                print(f"✅ Tile ({row}, {col}) @ {resolution}px generated and cached")
                 return tile_image
             
         except Exception as e:
