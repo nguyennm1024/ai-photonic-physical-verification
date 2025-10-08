@@ -46,10 +46,10 @@ class TileReviewPanel(ttk.LabelFrame):
     
     def _setup_widgets(self):
         """Create and layout widgets"""
-        # Tile image display
+        # Tile image display - LARGER (takes most space)
         self.image_frame = ttk.Frame(self)
-        self.image_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
+        self.image_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=(5, 2))
+
         self.tile_image_label = ttk.Label(
             self.image_frame,
             text="No tile selected\n\nProcess tiles to see results",
@@ -57,7 +57,7 @@ class TileReviewPanel(ttk.LabelFrame):
             justify='center'
         )
         self.tile_image_label.pack(fill=tk.BOTH, expand=True)
-        
+
         # Tile info
         self.tile_info_label = ttk.Label(
             self,
@@ -65,20 +65,20 @@ class TileReviewPanel(ttk.LabelFrame):
             font=('TkDefaultFont', 10, 'bold'),
             anchor='center'
         )
-        self.tile_info_label.pack(pady=5)
-        
-        # AI result text
+        self.tile_info_label.pack(pady=2)
+
+        # AI result text - moderate size
         result_frame = ttk.LabelFrame(self, text="AI Analysis")
-        result_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
+        result_frame.pack(fill=tk.BOTH, expand=False, padx=5, pady=(2, 5))
+
         # Scrolled text for AI result
         text_frame = ttk.Frame(result_frame)
         text_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
+
         self.ai_result_text = tk.Text(
             text_frame,
-            height=6,
             wrap=tk.WORD,
+            height=5,
             font=('TkDefaultFont', 9)
         )
         scrollbar = ttk.Scrollbar(text_frame, orient=tk.VERTICAL, command=self.ai_result_text.yview)
@@ -86,13 +86,13 @@ class TileReviewPanel(ttk.LabelFrame):
         self.ai_result_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
-        # Navigation and classification buttons
+        # Navigation and classification buttons - compact spacing
         button_frame = ttk.Frame(self)
-        button_frame.pack(fill=tk.X, padx=5, pady=10)
+        button_frame.pack(fill=tk.X, padx=5, pady=5)
         
         # Navigation
         nav_frame = ttk.Frame(button_frame)
-        nav_frame.pack(side=tk.TOP, fill=tk.X, pady=5)
+        nav_frame.pack(side=tk.TOP, fill=tk.X, pady=3)
         
         self.prev_button = ttk.Button(
             nav_frame,
@@ -116,9 +116,9 @@ class TileReviewPanel(ttk.LabelFrame):
         
         # Classification buttons
         classify_frame = ttk.Frame(button_frame)
-        classify_frame.pack(side=tk.TOP, fill=tk.X, pady=5)
-        
-        ttk.Label(classify_frame, text="User Classification:", font=('TkDefaultFont', 9, 'bold')).pack(side=tk.TOP, pady=5)
+        classify_frame.pack(side=tk.TOP, fill=tk.X, pady=3)
+
+        ttk.Label(classify_frame, text="User Classification:", font=('TkDefaultFont', 9, 'bold')).pack(side=tk.TOP, pady=2)
         
         btn_container = ttk.Frame(classify_frame)
         btn_container.pack()
@@ -181,8 +181,14 @@ class TileReviewPanel(ttk.LabelFrame):
         """
         # Display image
         try:
-            # Resize to fit
-            display_size = (256, 256)
+            # Resize to fit - use available space (larger now)
+            # Get current label size
+            self.tile_image_label.update_idletasks()
+            label_width = max(self.tile_image_label.winfo_width(), 200)
+            label_height = max(self.tile_image_label.winfo_height(), 200)
+
+            # Calculate display size maintaining aspect ratio - allow larger images
+            display_size = (min(label_width - 10, 400), min(label_height - 10, 400))
             image_resized = image.copy()
             image_resized.thumbnail(display_size, Image.Resampling.LANCZOS)
             
