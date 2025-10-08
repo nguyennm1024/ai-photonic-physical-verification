@@ -621,40 +621,36 @@ class EventHandlers:
             
             # Generate tile on demand
             print(f"🔧 Generating tile on demand...")
-            tile_data = self.tile_gen.generate_tile_on_demand(
+            tile_image = self.tile_gen.generate_tile_on_demand(
                 svg_path=svg_path,
                 row=row,
                 col=col,
                 grid_config=grid_config
             )
             
-            print(f"📦 Tile data received: {tile_data is not None}")
-            if tile_data:
-                print(f"   Has image: {tile_data.get('image') is not None}")
+            print(f"📦 Tile image received: {tile_image is not None}")
+            if tile_image:
+                print(f"   Image type: {type(tile_image)}")
+                print(f"   Image size: {tile_image.size}")
             
-            if tile_data and tile_data.get('image'):
+            if tile_image:
                 # Display tile in review panel
-                from PIL import Image
-                import io
-                import base64
-                
                 print(f"🖼️  Processing tile image...")
                 
-                # Decode base64 image if needed
-                if isinstance(tile_data['image'], str):
-                    img_data = base64.b64decode(tile_data['image'])
-                    image = Image.open(io.BytesIO(img_data))
-                else:
-                    image = tile_data['image']
+                # Get AI result if available (check if tile has been analyzed)
+                ai_result = 'Not yet analyzed - Click "Process All Tiles" or "Process Selected Regions"'
                 
-                print(f"   Image size: {image.size}")
-                
-                # Get AI result if available
-                ai_result = tile_data.get('analysis', 'Not yet analyzed - Click "Process All Tiles" or "Process Selected Regions"')
+                # Check if this tile has been analyzed
+                tile_metadata = None
+                for tile in self.state.state.tiles_data:
+                    if tile.row == row and tile.col == col and tile.analyzed:
+                        ai_result = tile.ai_result or ai_result
+                        tile_metadata = tile
+                        break
                 
                 # Display in tile review panel
                 print(f"✅ Displaying tile in Section 4...")
-                self._call_ui('display_tile_review', image, row, col, tile_index, ai_result)
+                self._call_ui('display_tile_review', tile_image, row, col, tile_index, ai_result)
                 self._call_ui('update_status', f"✅ Displaying tile {tile_index} (row {row}, col {col})")
                 print(f"✅ Tile {tile_index} displayed successfully!")
             else:
