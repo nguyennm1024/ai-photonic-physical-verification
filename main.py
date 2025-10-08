@@ -205,13 +205,12 @@ class LayoutVerificationApp:
         self.tile_review.bind_prev_command(self.handlers.handle_prev_tile)
         self.tile_review.bind_next_command(self.handlers.handle_next_tile)
         self.tile_review.bind_classify_command(self.handlers.handle_classify_tile)
-    
-    def _handle_generate_with_config(self):
-        """Get config from grid panel and call handler"""
-        config = self.grid_config.get_config()
-        self.handlers.handle_generate_grid(config['rows'], config['cols'], config['overlap'])
         
-        # Bind event handler UI callbacks
+        # Image canvas - tile click
+        self.image_canvas.bind_tile_click(self.handlers.handle_tile_click)
+        
+        # Bind event handler UI callbacks (do this once, not in generate function!)
+        # This allows event handlers to update the UI
         self.handlers.bind_ui_callback('update_file_info', self._update_file_info)
         self.handlers.bind_ui_callback('update_status', self._update_status)
         self.handlers.bind_ui_callback('update_grid_info', self._update_grid_info)
@@ -223,6 +222,11 @@ class LayoutVerificationApp:
         self.handlers.bind_ui_callback('add_roi_to_list', self._add_roi_to_list)
         self.handlers.bind_ui_callback('update_summary', self._update_summary)
         self.handlers.bind_ui_callback('display_tile_review', self._display_tile_review)
+    
+    def _handle_generate_with_config(self):
+        """Get config from grid panel and call handler"""
+        config = self.grid_config.get_config()
+        self.handlers.handle_generate_grid(config['rows'], config['cols'], config['overlap'])
     
     # UI callback implementations
     def _update_file_info(self, file_path: str):
