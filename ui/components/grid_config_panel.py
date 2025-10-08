@@ -44,31 +44,31 @@ class GridConfigPanel(ttk.LabelFrame):
         
         # Rows
         ttk.Label(controls_frame, text="Rows:").pack(side=tk.LEFT, padx=(0, 2))
-        self.rows_var = tk.IntVar(value=3)
+        self.rows_var = tk.IntVar(value=50)
         self.rows_spinbox = ttk.Spinbox(
             controls_frame,
             from_=1,
-            to=50,
+            to=100,
             textvariable=self.rows_var,
             width=5
         )
         self.rows_spinbox.pack(side=tk.LEFT, padx=2)
-        
+
         # Columns
         ttk.Label(controls_frame, text="Cols:").pack(side=tk.LEFT, padx=(8, 2))
-        self.cols_var = tk.IntVar(value=3)
+        self.cols_var = tk.IntVar(value=50)
         self.cols_spinbox = ttk.Spinbox(
             controls_frame,
             from_=1,
-            to=50,
+            to=100,
             textvariable=self.cols_var,
             width=5
         )
         self.cols_spinbox.pack(side=tk.LEFT, padx=2)
-        
+
         # Overlap
         ttk.Label(controls_frame, text="Overlap:").pack(side=tk.LEFT, padx=(8, 2))
-        self.overlap_var = tk.IntVar(value=10)
+        self.overlap_var = tk.IntVar(value=0)
         self.overlap_spinbox = ttk.Spinbox(
             controls_frame,
             from_=0,
@@ -78,10 +78,10 @@ class GridConfigPanel(ttk.LabelFrame):
         )
         self.overlap_spinbox.pack(side=tk.LEFT, padx=2)
         ttk.Label(controls_frame, text="%").pack(side=tk.LEFT)
-        
-        # Info label (for grid info)
-        self.info_label = ttk.Label(self, text="")
-        self.info_label.pack(padx=5, pady=2)
+
+        # Info label (for grid info) - wrappable text
+        self.info_label = ttk.Label(self, text="", wraplength=300)
+        self.info_label.pack(padx=5, pady=2, fill=tk.X)
     
     def bind_generate_command(self, callback: Callable[[int, int, int], None]):
         """
