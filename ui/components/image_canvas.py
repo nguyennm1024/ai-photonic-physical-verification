@@ -159,7 +159,7 @@ class ImageCanvas(ttk.Frame):
         """
         self.roi_selecting = True
         self.roi_callback = callback
-        self.ax.set_title("ROI Mode - Draw rectangles | Click to select | Ctrl+Click for multiple | Delete key to remove", 
+        self.ax.set_title("ROI Mode - Draw rectangles | Click ROI to select | Click empty space to clear | Delete key to remove", 
                         fontsize=11, fontweight='bold')
         self.canvas.draw()
     
@@ -208,17 +208,21 @@ class ImageCanvas(ttk.Frame):
             return
         
         click_x, click_y = event.xdata, event.ydata
+        print(f"🖱️  Mouse press at ({click_x:.1f}, {click_y:.1f})")
         
         # Check if clicking on an existing ROI rectangle (for selection)
         clicked_roi = self._find_roi_at_point(click_x, click_y)
         if clicked_roi is not None:
-            # Toggle selection of this ROI (Ctrl+Click for multiple selection)
+            print(f"🎯 Clicked on ROI: {clicked_roi}")
+            # Toggle selection of this ROI
             self._toggle_roi_selection(clicked_roi, event)
             return
+        else:
+            print(f"📭 Clicked on empty space")
         
         # Handle ROI drawing mode (start drawing new ROI)
         if self.roi_selecting:
-            # Clear all selections when starting to draw new ROI
+            # Clear all selections when clicking empty space (not on ROI)
             self._clear_all_selections()
             
             # Start drawing new ROI
@@ -387,25 +391,20 @@ class ImageCanvas(ttk.Frame):
     def _toggle_roi_selection(self, roi_rect, event):
         """
         Toggle selection of an ROI rectangle.
-        Supports multiple selection with Ctrl+Click.
+        Simple approach: Click ROI to add to selection, click empty space to clear all.
         
         Args:
             roi_rect: Rectangle object to toggle
-            event: Mouse event (to check for Ctrl key)
+            event: Mouse event
         """
-        # Check if Ctrl key is pressed for multiple selection
-        ctrl_pressed = event.key == 'control' or (hasattr(event, 'button') and event.button == 3)
+        print(f"🔍 ROI clicked: {roi_rect}")
         
         if roi_rect in self.selected_roi_rects:
             # Deselect this ROI
             self._deselect_single_roi(roi_rect)
             print(f"❌ ROI deselected")
         else:
-            # Select this ROI
-            if not ctrl_pressed:
-                # Clear all other selections if Ctrl not pressed
-                self._clear_all_selections()
-            
+            # Add this ROI to selection (don't clear others)
             self._select_single_roi(roi_rect)
             print(f"✅ ROI selected ({len(self.selected_roi_rects)} total)")
     
