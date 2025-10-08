@@ -1,285 +1,111 @@
 """
-GDS File Loader
+GDS Loader Module
+=================
 
-This module handles loading and validation of GDS (GDSII) files.
-It provides functionality to load GDS files and extract basic information.
+Handles loading and basic operations on GDS files.
 """
 
-import os
+from typing import Optional
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Any
-from tkinter import filedialog, messagebox
 
 try:
     import gdspy
-    GDSPY_AVAILABLE = True
 except ImportError:
-    GDSPY_AVAILABLE = False
     gdspy = None
 
 
 class GDSLoader:
-    """
-    Handles loading and validation of GDS files.
-    
-    This class provides functionality to:
-    - Load GDS files through file dialog
-    - Validate GDS file structure
-    - Extract file information
-    - Check file compatibility
-    """
+    """Load and extract information from GDS files"""
     
     def __init__(self):
-        """Initialize the GDS loader"""
-        self.current_gds_path: Optional[str] = None
-        self.gds_library: Optional[Any] = None
-        self.file_info: Optional[Dict[str, Any]] = None
+        """Initialize GDS loader"""
+        if gdspy is None:
+            print("Warning: gdspy not available")
     
-    def is_gdspy_available(self) -> bool:
-        """
-        Check if gdspy library is available.
-        
-        Returns:
-            True if gdspy is available, False otherwise
-        """
-        return GDSPY_AVAILABLE
+    @staticmethod
+    def is_available() -> bool:
+        """Check if gdspy is available"""
+        return gdspy is not None
     
-    def load_gds_file_dialog(self, initial_dir: str = None) -> Optional[str]:
+    def load_gds(self, file_path: str) -> Optional['gdspy.GdsLibrary']:
         """
-        Open file dialog to select a GDS file.
+        Load GDS file and return library.
         
         Args:
-            initial_dir: Initial directory for file dialog
+            file_path: Path to GDS file
             
         Returns:
-            Selected file path or None if cancelled
+            GdsLibrary object or None if loading fails
         """
-        # Use current working directory if no initial directory specified
-        if initial_dir is None:
-            import os
-            initial_dir = os.getcwd()
-            
-        file_path = filedialog.askopenfilename(
-            title="Select GDS File",
-            filetypes=[("GDS files", "*.gds *.GDS"), ("All files", "*.*")],
-            initialdir=initial_dir
-        )
-        
-        if file_path:
-            return self.load_gds_file(file_path)
-        
-        return None
-    
-    def load_gds_file(self, file_path: str) -> Optional[str]:
-        """
-        Load a GDS file and validate its structure.
-        
-        Args:
-            file_path: Path to the GDS file
-            
-        Returns:
-            File path if successful, None if failed
-        """
-        if not self.is_gdspy_available():
-            messagebox.showerror("Error", "gdspy library not available")
-            return None
-        
-        if not os.path.exists(file_path):
-            messagebox.showerror("Error", f"File not found: {file_path}")
-            return None
+        if not gdspy:
+            raise ImportError("gdspy library not available")
         
         try:
-            # Load GDS library (simple approach like original)
-            self.gds_library = gdspy.GdsLibrary(infile=file_path)
-            self.current_gds_path = file_path
-            
-            # Extract basic file information
-            self.file_info = self._extract_basic_file_info(file_path)
-            
-            return file_path
-            
+            gds_lib = gdspy.GdsLibrary(infile=file_path)
+            return gds_lib
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to load GDS file: {str(e)}")
+            print(f"Error loading GDS file: {e}")
             return None
     
-    def _extract_basic_file_info(self, file_path: str) -> Dict[str, Any]:
+    def get_cell(self, gds_lib: 'gdspy.GdsLibrary', cell_index: int = 0):
         """
-        Extract basic information from the GDS file (simplified approach).
+        Get cell from GDS library.
         
         Args:
-            file_path: Path to the GDS file
+            gds_lib: GDS library object
+            cell_index: Index of cell to get (default 0 = first cell)
             
         Returns:
-            Dictionary containing basic file information
+            Cell object or None
         """
-        file_info = {
-            'path': file_path,
-            'name': Path(file_path).name,
-            'size_mb': os.path.getsize(file_path) / (1024 * 1024),
-            'cells': [],
-            'layers': [],
-            'datatypes': []
-        }
-        
-        if self.gds_library:
-            # Get basic cell information
-            for cell_name, cell in self.gds_library.cells.items():
-                cell_info = {
-                    'name': cell_name,
-                    'bounding_box': cell.get_bounding_box()
-                }
-                file_info['cells'].append(cell_info)
-            
-            # Get layer and datatype information from first cell
-            if file_info['cells']:
-                first_cell = self.gds_library.cells[file_info['cells'][0]['name']]
-                polygons = first_cell.get_polygons(by_spec=True)
-                layers = set()
-                datatypes = set()
-                
-                for (layer, datatype) in polygons.keys():
-                    layers.add(layer)
-                    datatypes.add(datatype)
-                
-                file_info['layers'] = sorted(list(layers))
-                file_info['datatypes'] = sorted(list(datatypes))
-        
-        return file_info
-    
-    def get_file_info(self) -> Optional[Dict[str, Any]]:
-        """
-        Get information about the currently loaded GDS file.
-        
-        Returns:
-            File information dictionary or None if no file loaded
-        """
-        return self.file_info
-    
-    def get_file_display_info(self) -> str:
-        """
-        Get formatted file information for display.
-        
-        Returns:
-            Formatted string with file information
-        """
-        if not self.file_info:
-            return "No file loaded"
-        
-        info = self.file_info
-        return f"{info['name']} ({info['size_mb']:.1f} MB)"
-    
-    def get_cells(self) -> list:
-        """
-        Get list of cell names in the GDS file.
-        
-        Returns:
-            List of cell names
-        """
-        if not self.gds_library:
-            return []
-        
-        return list(self.gds_library.cells.keys())
-    
-    def get_first_cell(self) -> Optional[Any]:
-        """
-        Get the first cell from the GDS library.
-        
-        Returns:
-            First cell object or None if no cells
-        """
-        if not self.gds_library:
+        if not gds_lib:
             return None
         
-        cell_names = list(self.gds_library.cells.keys())
+        cell_names = list(gds_lib.cells.keys())
         if not cell_names:
-            return None
+            raise ValueError("No cells found in GDS file")
         
-        return self.gds_library.cells[cell_names[0]]
+        if cell_index >= len(cell_names):
+            cell_index = 0
+        
+        return gds_lib.cells[cell_names[cell_index]]
     
-    def get_cell_bounding_box(self, cell_name: Optional[str] = None) -> Optional[Tuple[Tuple[float, float], Tuple[float, float]]]:
+    def get_bounding_box(self, cell) -> Optional[tuple]:
         """
-        Get bounding box of a cell.
+        Extract bounding box from cell.
         
         Args:
-            cell_name: Name of the cell (uses first cell if None)
+            cell: GDS cell object
             
         Returns:
-            Bounding box as ((x1, y1), (x2, y2)) or None if not found
+            ((min_x, min_y), (max_x, max_y)) or None
         """
-        if not self.gds_library:
+        if not cell:
             return None
         
-        if cell_name is None:
-            cell = self.get_first_cell()
-        else:
-            cell = self.gds_library.cells.get(cell_name)
+        bbox = cell.get_bounding_box()
+        if bbox is None:
+            raise ValueError("Cell appears to be empty")
         
-        if cell:
-            return cell.get_bounding_box()
-        
-        return None
+        return bbox
     
-    def get_polygons_by_layer(self, cell_name: Optional[str] = None) -> Dict[Tuple[int, int], list]:
+    def get_file_info(self, file_path: str) -> dict:
         """
-        Get polygons grouped by layer and datatype.
+        Get basic information about a GDS file.
         
         Args:
-            cell_name: Name of the cell (uses first cell if None)
+            file_path: Path to GDS file
             
         Returns:
-            Dictionary mapping (layer, datatype) to list of polygons
+            Dict with 'size_mb', 'name', 'path' keys
         """
-        if not self.gds_library:
-            return {}
+        path = Path(file_path)
+        size_bytes = path.stat().st_size
+        size_mb = size_bytes / (1024 * 1024)
         
-        if cell_name is None:
-            cell = self.get_first_cell()
-        else:
-            cell = self.gds_library.cells.get(cell_name)
-        
-        if cell:
-            return cell.get_polygons(by_spec=True)
-        
-        return {}
-    
-    def validate_gds_structure(self) -> Tuple[bool, list]:
-        """
-        Validate the GDS file structure (simplified approach).
-        
-        Returns:
-            Tuple of (is_valid, list_of_errors)
-        """
-        errors = []
-        
-        if not self.gds_library:
-            errors.append("No GDS library loaded")
-            return False, errors
-        
-        # Check if there are any cells
-        if not self.gds_library.cells:
-            errors.append("No cells found in GDS file")
-            return False, errors
-        
-        # Check if first cell has content (simple check like original)
-        first_cell = self.get_first_cell()
-        if first_cell:
-            bbox = first_cell.get_bounding_box()
-            if bbox is None:
-                errors.append("First cell appears to be empty")
-        
-        return len(errors) == 0, errors
-    
-    def clear(self):
-        """Clear the currently loaded GDS file"""
-        self.current_gds_path = None
-        self.gds_library = None
-        self.file_info = None
-    
-    def is_loaded(self) -> bool:
-        """
-        Check if a GDS file is currently loaded.
-        
-        Returns:
-            True if a file is loaded, False otherwise
-        """
-        return self.current_gds_path is not None and self.gds_library is not None
+        return {
+            'name': path.name,
+            'path': str(path),
+            'size_mb': size_mb
+        }
+
