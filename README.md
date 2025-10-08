@@ -107,6 +107,12 @@ python main.py
 - **`utils/`** - Coordinate transformations, image processing, thread-safe communication
 - **`ui/`** - Reusable components, event handlers, styling
 
+### UI Example
+
+![UI Example](figures/ui_example.png)
+
+*The modern, clean interface showing the dual-panel layout with controls on the left and interactive layout visualization on the right.*
+
 ### Guides
 - **[INSTALLATION.md](INSTALLATION.md)** - Complete installation guide with troubleshooting
 - **[docs/REFACTORING_DESIGN.md](docs/REFACTORING_DESIGN.md)** - Architecture & design details
