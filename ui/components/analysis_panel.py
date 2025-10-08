@@ -66,8 +66,7 @@ class AnalysisPanel(ttk.Frame):
         self.results_text = scrolledtext.ScrolledText(
             results_frame,
             wrap=tk.WORD,
-            height=20,
-            font=('Courier', 10)
+            font=('Courier', 9)
         )
         self.results_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
     
