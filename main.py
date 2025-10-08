@@ -236,7 +236,8 @@ class LayoutVerificationApp:
         self.handlers.bind_ui_callback('update_status', self._update_status)
         self.handlers.bind_ui_callback('update_grid_info', self._update_grid_info)
         self.handlers.bind_ui_callback('set_progress', self._set_progress)
-        self.handlers.bind_ui_callback('append_result', self._append_result)
+        # Removed append_result binding - detailed results no longer displayed
+        # self.handlers.bind_ui_callback('append_result', self._append_result)
         self.handlers.bind_ui_callback('display_image', self._display_image)
         self.handlers.bind_ui_callback('enable_roi_selection', self._enable_roi_selection)
         self.handlers.bind_ui_callback('disable_roi_selection', self._disable_roi_selection)
@@ -272,8 +273,9 @@ class LayoutVerificationApp:
         self.root.update_idletasks()
     
     def _append_result(self, text: str):
-        """Append text to results panel"""
-        self.analysis_panel.append_result(text)
+        """Append text to results panel (removed - no longer supported)"""
+        # Results display removed - only progress tracking remains
+        pass
     
     def _display_image(self, image, grid_config=None, svg_dimensions=None):
         """Display image on canvas with optional grid overlay and SVG dimensions"""

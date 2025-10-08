@@ -72,7 +72,7 @@ class EventHandlers:
             'update_status': None,
             'update_grid_info': None,
             'set_progress': None,
-            'append_result': None,
+            # 'append_result': None,  # Removed - detailed results no longer displayed
             'display_image': None,
             'enable_roi_selection': None,
             'disable_roi_selection': None,
@@ -506,7 +506,8 @@ class EventHandlers:
                 self._call_ui('update_tile_status', row, col, result.get('classification'))
 
             # Append result
-            self._call_ui('append_result', f"Tile ({row},{col}): {result.get('summary', 'Analyzed')}")
+            # Removed detailed results display - only progress tracking remains
+            # self._call_ui('append_result', f"Tile ({row},{col}): {result.get('summary', 'Analyzed')}")
 
             return result
 
@@ -641,7 +642,8 @@ class EventHandlers:
                 self._call_ui('update_status', f"Analyzing ROI_{region.id}...")
                 
                 # For now, just show message
-                self._call_ui('append_result', f"ROI_{region.id} analysis: (implementation needed)")
+            # Removed detailed results display - only progress tracking remains
+            # self._call_ui('append_result', f"ROI_{region.id} analysis: (implementation needed)")
                 
             except Exception as e:
                 print(f"Error analyzing ROI_{region.id}: {e}")
