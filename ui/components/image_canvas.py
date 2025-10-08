@@ -40,7 +40,7 @@ class ImageCanvas(ttk.Frame):
         self.roi_start = None
         self.roi_temp_rect = None  # Temporary rectangle while dragging
         self.roi_rectangles = []  # List of permanent ROI rectangles
-        self.selected_roi_rect = None  # Currently selected ROI for deletion
+        self.selected_roi_rects = []  # List of selected ROI rectangles for multiple selection
         self.roi_callback: Optional[Callable[[Tuple[int, int, int, int]], None]] = None
         
         # Tile selection state
@@ -159,7 +159,7 @@ class ImageCanvas(ttk.Frame):
         """
         self.roi_selecting = True
         self.roi_callback = callback
-        self.ax.set_title("ROI Mode - Draw rectangles | Click to select | Delete key to remove", 
+        self.ax.set_title("ROI Mode - Draw rectangles | Click to select | Ctrl+Click for multiple | Delete key to remove", 
                         fontsize=11, fontweight='bold')
         self.canvas.draw()
     
@@ -185,6 +185,7 @@ class ImageCanvas(ttk.Frame):
         for roi_rect in self.roi_rectangles:
             roi_rect.remove()
         self.roi_rectangles.clear()
+        self.selected_roi_rects.clear()
         
         if self.roi_temp_rect:
             self.roi_temp_rect.remove()
@@ -211,15 +212,14 @@ class ImageCanvas(ttk.Frame):
         # Check if clicking on an existing ROI rectangle (for selection)
         clicked_roi = self._find_roi_at_point(click_x, click_y)
         if clicked_roi is not None:
-            # Select this ROI
-            self._select_roi(clicked_roi)
+            # Toggle selection of this ROI (Ctrl+Click for multiple selection)
+            self._toggle_roi_selection(clicked_roi, event)
             return
         
         # Handle ROI drawing mode (start drawing new ROI)
         if self.roi_selecting:
-            # Deselect any selected ROI
-            if self.selected_roi_rect is not None:
-                self._deselect_roi()
+            # Clear all selections when starting to draw new ROI
+            self._clear_all_selections()
             
             # Start drawing new ROI
             self.roi_start = (click_x, click_y)
@@ -384,32 +384,54 @@ class ImageCanvas(ttk.Frame):
         
         return None
     
-    def _select_roi(self, roi_rect):
+    def _toggle_roi_selection(self, roi_rect, event):
         """
-        Select an ROI rectangle (highlight it).
+        Toggle selection of an ROI rectangle.
+        Supports multiple selection with Ctrl+Click.
         
         Args:
-            roi_rect: Rectangle object to select
+            roi_rect: Rectangle object to toggle
+            event: Mouse event (to check for Ctrl key)
         """
-        # Deselect previous
-        if self.selected_roi_rect is not None:
-            self._deselect_roi()
+        # Check if Ctrl key is pressed for multiple selection
+        ctrl_pressed = event.key == 'control' or (hasattr(event, 'button') and event.button == 3)
         
-        # Highlight the selected ROI
-        self.selected_roi_rect = roi_rect
-        roi_rect.set_edgecolor('yellow')
-        roi_rect.set_linewidth(3)
-        self.canvas.draw()
-        
-        print(f"✅ ROI selected (click Delete to remove)")
+        if roi_rect in self.selected_roi_rects:
+            # Deselect this ROI
+            self._deselect_single_roi(roi_rect)
+            print(f"❌ ROI deselected")
+        else:
+            # Select this ROI
+            if not ctrl_pressed:
+                # Clear all other selections if Ctrl not pressed
+                self._clear_all_selections()
+            
+            self._select_single_roi(roi_rect)
+            print(f"✅ ROI selected ({len(self.selected_roi_rects)} total)")
     
-    def _deselect_roi(self):
-        """Deselect currently selected ROI."""
-        if self.selected_roi_rect is not None:
-            self.selected_roi_rect.set_edgecolor('red')
-            self.selected_roi_rect.set_linewidth(2)
-            self.selected_roi_rect = None
+    def _select_single_roi(self, roi_rect):
+        """Select a single ROI rectangle (highlight it)."""
+        if roi_rect not in self.selected_roi_rects:
+            self.selected_roi_rects.append(roi_rect)
+            roi_rect.set_edgecolor('yellow')
+            roi_rect.set_linewidth(3)
             self.canvas.draw()
+    
+    def _deselect_single_roi(self, roi_rect):
+        """Deselect a single ROI rectangle."""
+        if roi_rect in self.selected_roi_rects:
+            self.selected_roi_rects.remove(roi_rect)
+            roi_rect.set_edgecolor('red')
+            roi_rect.set_linewidth(2)
+            self.canvas.draw()
+    
+    def _clear_all_selections(self):
+        """Clear all ROI selections."""
+        for roi_rect in self.selected_roi_rects:
+            roi_rect.set_edgecolor('red')
+            roi_rect.set_linewidth(2)
+        self.selected_roi_rects.clear()
+        self.canvas.draw()
     
     def _on_key_press(self, event):
         """
@@ -419,12 +441,14 @@ class ImageCanvas(ttk.Frame):
             event: Keyboard event
         """
         if event.key == 'delete' or event.key == 'backspace':
-            # Delete selected ROI
-            if self.selected_roi_rect is not None:
-                print(f"🗑️  Deleting selected ROI")
-                self.selected_roi_rect.remove()
-                self.roi_rectangles.remove(self.selected_roi_rect)
-                self.selected_roi_rect = None
+            # Delete all selected ROIs
+            if self.selected_roi_rects:
+                count = len(self.selected_roi_rects)
+                print(f"🗑️  Deleting {count} selected ROI(s)")
+                for roi_rect in self.selected_roi_rects[:]:  # Copy list to avoid modification during iteration
+                    roi_rect.remove()
+                    self.roi_rectangles.remove(roi_rect)
+                self.selected_roi_rects.clear()
                 self.canvas.draw()
-                print(f"✅ ROI deleted")
+                print(f"✅ {count} ROI(s) deleted")
 
