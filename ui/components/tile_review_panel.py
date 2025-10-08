@@ -71,6 +71,17 @@ class TileReviewPanel(ttk.LabelFrame):
         result_frame = ttk.LabelFrame(self, text="AI Analysis")
         result_frame.pack(fill=tk.BOTH, expand=False, padx=5, pady=(2, 5))
 
+        # Status indicator - colored dots for analysis result
+        status_indicator_frame = ttk.Frame(result_frame)
+        status_indicator_frame.pack(fill=tk.X, padx=5, pady=(5, 2))
+
+        self.status_label = ttk.Label(
+            status_indicator_frame,
+            text="",
+            font=('TkDefaultFont', 9, 'bold')
+        )
+        self.status_label.pack(side=tk.LEFT)
+
         # Scrolled text for AI result
         text_frame = ttk.Frame(result_frame)
         text_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -168,16 +179,17 @@ class TileReviewPanel(ttk.LabelFrame):
         if self.classify_callback:
             self.classify_callback(classification)
     
-    def display_tile(self, image: Image.Image, row: int, col: int, index: int, ai_result: str = ""):
+    def display_tile(self, image: Image.Image, row: int, col: int, index: int, ai_result: str = "", classification: str = None):
         """
         Display tile for review.
-        
+
         Args:
             image: PIL Image of the tile
             row: Tile row
             col: Tile column
             index: Tile index
             ai_result: AI analysis result text
+            classification: AI classification result ('continuity', 'discontinuity', 'no_waveguide')
         """
         # Display image
         try:
@@ -202,12 +214,18 @@ class TileReviewPanel(ttk.LabelFrame):
         # Update tile info
         self.tile_info_label.config(text=f"Tile #{index} (Row {row}, Col {col})")
         
-        # Update AI result
+        # Update AI result and status indicator
         self.ai_result_text.delete('1.0', tk.END)
         if ai_result:
             self.ai_result_text.insert('1.0', ai_result)
+            # Determine status from classification if available
+            if classification:
+                self._update_status_indicator(classification)
+            else:
+                self.status_label.config(text="", foreground='black')
         else:
             self.ai_result_text.insert('1.0', "No AI analysis available")
+            self.status_label.config(text="", foreground='black')
         
         # Enable buttons
         self.prev_button.config(state='normal')
@@ -221,6 +239,7 @@ class TileReviewPanel(ttk.LabelFrame):
         self.current_image_ref = None
         self.tile_info_label.config(text="")
         self.ai_result_text.delete('1.0', tk.END)
+        self.status_label.config(text="", foreground='black')
         self.disable_all()
     
     def enable_all(self):
@@ -237,10 +256,30 @@ class TileReviewPanel(ttk.LabelFrame):
         self.continuous_button.config(state='disabled')
         self.discontinuity_button.config(state='disabled')
     
+    def _update_status_indicator(self, classification: str):
+        """
+        Update the status indicator based on AI classification.
+
+        Args:
+            classification: AI classification result ('continuity', 'discontinuity', 'no_waveguide')
+        """
+        classification_lower = classification.lower().strip()
+
+        # Map classification to status
+        if classification_lower == 'discontinuity':
+            self.status_label.config(text="🔴 Discontinuity", foreground='red')
+        elif classification_lower == 'no_waveguide':
+            self.status_label.config(text="🟠 No waveguide", foreground='orange')
+        elif classification_lower == 'continuity':
+            self.status_label.config(text="🟢 Continuity", foreground='green')
+        else:
+            # Unknown classification - show neutral
+            self.status_label.config(text="⚪ Analyzed", foreground='gray')
+
     def highlight_classification(self, classification: Optional[str]):
         """
         Highlight the given classification button.
-        
+
         Args:
             classification: 'continuous', 'discontinuity', or None
         """
