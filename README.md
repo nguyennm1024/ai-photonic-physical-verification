@@ -20,9 +20,11 @@ A comprehensive GUI application for automated photonic integrated circuit (PIC) 
 
 ### User Interface
 - **Dual-Panel Layout**: Controls on left, original layout visualization on right
-- **Interactive Canvas**: Click navigation, ROI drawing, and visual feedback
+- **Interactive Canvas**: Click navigation, ROI drawing with blue boxes, and colored tile status overlays
+- **Visual Status Indicators**: Color-coded dots (🟢/🔴/🟠) showing AI classification results
+- **Responsive Design**: Components scale proportionally with window resizing
 - **Progress Tracking**: Real-time analysis progress with pause/resume capability
-- **Tooltip System**: Contextual help and guidance throughout the interface
+- **Enhanced Navigation**: Previous/Next buttons with keyboard shortcuts for tile review
 
 ## 📋 Requirements
 
@@ -38,147 +40,134 @@ A comprehensive GUI application for automated photonic integrated circuit (PIC) 
 
 ## 🛠 Installation
 
-### 1. Clone the Repository
+**Prerequisites:**
+- Python 3.9+ with tkinter
+- [Google Gemini API Key](https://makersuite.google.com/app/apikey)
+- SVG Converter (rsvg-convert or inkscape)
+
 ```bash
+# Clone and install
 git clone https://github.com/nguyennm1024/ai-photonic-physical-verification.git
 cd ai-photonic-physical-verification
+pip install -e .
+
+# Set API key
+export GOOGLE_API_KEY='your_api_key_here'
+
+# Install SVG converter
+brew install librsvg  # macOS
+# OR
+sudo apt-get install librsvg2-bin  # Ubuntu/Debian
+
+# Verify installation
+python test_modules.py
 ```
 
-### 2. Install Python Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Set Environment Variables
-```bash
-export GOOGLE_API_KEY=your_api_key_here
-```
-
-### 4. Optional: Install System Tools (Recommended)
-For enhanced SVG-to-PNG conversion:
-
-**macOS:**
-```bash
-brew install librsvg inkscape
-```
-
-**Ubuntu/Debian:**
-```bash
-sudo apt-get install librsvg2-bin inkscape
-```
-
-**Windows:**
-- Download and install [Inkscape](https://inkscape.org/release/)
-- Install [Google Chrome](https://www.google.com/chrome/) for browser-based conversion
+**For detailed instructions and troubleshooting:** See [INSTALLATION.md](INSTALLATION.md)
 
 ## 🚀 Quick Start
 
 ### Basic Usage
 ```bash
-python layout_verification_app.py
+python main.py
 ```
+
+> **Note**: The old `layout_verification_app.py` has been renamed to `layout_verification_app_OLD.py`. Use `main.py` for the refactored version.
 
 ### Workflow
 1. **Load GDS File**: Click "Load GDS File" and select your layout file
-2. **Configure Grid**: Set tile grid size, overlap, and resolution
-3. **Split to Tiles**: Generate tiles for analysis
-4. **Start AI Analysis**: Begin automated discontinuity detection
-5. **Review Results**: Manually classify detected issues
-6. **Export Results**: Save analysis results to JSON format
+2. **Configure Grid**: Set tile grid size (default 50×50), overlap (default 0%)
+3. **Generate Grid**: Click "Generate Grid" to prepare the tile system
+4. **Select Region (Optional)**:
+   - Click "Select ROIs" to enable ROI mode (button turns to "✓ Selecting ROIs")
+   - Draw blue boxes on the layout to select specific regions
+   - Select multiple regions without re-clicking the button
+5. **Start AI Analysis**:
+   - Click "Process All Tiles" for full layout analysis
+   - Or "Process Selected Regions" for ROI-only analysis
+6. **Review Results**:
+   - View colored tile overlays on layout (green/red boxes)
+   - Click any tile to see details in the review panel
+   - Status indicators show 🟢 Continuity, 🔴 Discontinuity, or 🟠 No waveguide
+   - Use Previous/Next buttons to navigate through tiles
+7. **Manual Classification**: Classify tiles as "✓ Continuous" or "⚠ Discontinuity"
+8. **Export Results**: Save analysis results to JSON format
 
-### Advanced Features
-- **ROI Analysis**: Draw regions of interest for focused analysis
-- **Virtual Tiles**: Use on-demand generation for memory efficiency
-- **Pause/Resume**: Control analysis flow for large datasets
-- **Interactive Navigation**: Click on original layout to jump to specific tiles
+**Tips:**
+- Use ROI selection for focused analysis of critical areas
+- Click "Cancel Processing" to pause at any time
+- Resize window to adjust UI layout proportionally
 
 ## 📖 Documentation
 
 ### Application Architecture
-The application follows a monolithic design with several key components:
-- **File Processing**: GDS loading and SVG conversion
-- **Tile Management**: Virtual and physical tile generation
-- **AI Analysis**: Gemini-powered discontinuity detection
-- **User Interface**: Tkinter-based GUI with matplotlib integration
-- **Data Export**: Comprehensive results formatting
 
-### Configuration Options
-- **Grid Size**: Configurable rows × columns (default: 10×10)
-- **Tile Overlap**: Percentage overlap between adjacent tiles (default: 0%)
-- **Resolution**: Tile resolution from 512px to 4096px (default: 512px)
-- **CPU Cores**: Configurable parallel processing (default: 8 cores)
-- **Cache Size**: Virtual tile cache limit (default: 50 tiles)
+**Modular Structure:**
+- **`core/`** - Business logic (file management, tile system, AI analyzer, ROI manager, state)
+- **`utils/`** - Coordinate transformations, image processing, thread-safe communication
+- **`ui/`** - Reusable components, event handlers, styling
 
-### File Formats
-- **Input**: GDS files (.gds, .GDS)
-- **Intermediate**: SVG format for visualization
-- **Output**: JSON format with complete analysis metadata
+### Guides
+- **[INSTALLATION.md](INSTALLATION.md)** - Complete installation guide with troubleshooting
+- **[docs/REFACTORING_DESIGN.md](docs/REFACTORING_DESIGN.md)** - Architecture & design details
 
 ## 🤖 AI Analysis
 
-### Gemini Integration
-- **Dual Model Architecture**:
-  - **Gemini Pro**: Detailed analysis and reasoning
-  - **Gemini Flash**: Fast binary classification
-- **Sophisticated Prompting**: Specialized prompts for photonic layout analysis
-- **Fallback Classification**: Keyword-based backup when AI models fail
+**Dual Model Architecture:**
+- **Gemini Pro** for detailed analysis and reasoning
+- **Gemini Flash** for fast three-category classification
 
-### Analysis Pipeline
-1. **Tile Generation**: Create analysis-ready image tiles
-2. **AI Processing**: Send tiles to Gemini for analysis
-3. **Classification**: Binary categorization (continuity/discontinuity)
-4. **Result Storage**: Store detailed analysis and classification
-5. **User Review**: Manual verification and correction
+**Analysis Pipeline:**
+1. **Tile Generation**: Create analysis-ready image tiles with resolution-aware caching
+2. **AI Processing**: Send tiles to Gemini Pro for detailed analysis
+3. **Classification**: Three-category classification using Gemini Flash:
+   - **Continuity** - Waveguides are continuous and properly aligned
+   - **Discontinuity** - Breaks, gaps, misalignments, or structural issues detected
+   - **No Waveguide** - No actual waveguides found in the tile
+4. **Visual Feedback**: Colored overlays on layout and status indicators in review panel
+5. **Result Storage**: Store detailed analysis, classification, and coordinates
+6. **User Review**: Manual verification and correction with Previous/Next navigation
 
 ## 🔧 Troubleshooting
 
-### Common Issues
-
-#### "GOOGLE_API_KEY environment variable not set"
-```bash
-export GOOGLE_API_KEY=your_actual_api_key
-```
-
-#### "gdspy not available"
-```bash
-pip install gdspy>=1.6.13
-```
-
-#### SVG conversion fails
-- Install system dependencies: `librsvg`, `inkscape`, or Chrome
-- The app will show a placeholder if all conversion methods fail
-- AI analysis will still work without perfect SVG conversion
-
-#### Memory issues with large grids
-- Reduce grid size (start with 5×5 or 10×10)
-- Use lower tile resolution (512px instead of 2048px)
-- Enable virtual tiles instead of pre-generated files
-
-### Performance Optimization
-- **Reduce CPU cores** for other system tasks
-- **Use virtual tiles** for memory efficiency
-- **Enable caching** for repeated analysis
-- **Focus on ROI** for targeted analysis
+**Common Issues:**
+- **Installation errors** → See [INSTALLATION.md](INSTALLATION.md#troubleshooting)
+- **Tile generation fails** → Install rsvg-convert or inkscape
+- **Memory issues** → Reduce grid size, use virtual tiles
+- **Analysis errors** → Check API key configuration
 
 ## 📊 Example Usage
 
 ### Analyzing a Small Layout
 ```python
 # Configuration for quick analysis
-Grid Size: 5×5
-Tile Resolution: 512px
+Grid Size: 10×10
+Tile Resolution: 512px (AI), 384px (preview)
 CPU Cores: 4
+Virtual Tiles: Enabled
+ROI Analysis: Optional - select specific areas
+```
+
+### Analyzing a Medium Layout (Default)
+```python
+# Default configuration - optimal for most cases
+Grid Size: 50×50
+Tile Overlap: 0%
+Tile Resolution: 512px (AI), 384px (preview)
+CPU Cores: 8
+Cache Size: 100 tiles
 Virtual Tiles: Enabled
 ```
 
 ### Analyzing a Large Layout
 ```python
 # Configuration for comprehensive analysis
-Grid Size: 20×20
+Grid Size: 80×80
 Tile Resolution: 1024px
 CPU Cores: 8
 Virtual Tiles: Enabled
-ROI Analysis: Use for focused areas
+ROI Analysis: Highly recommended - focus on critical areas first
+Preview Resolution: 384px for faster navigation
 ```
 
 ## 🤝 Contributing
@@ -191,40 +180,38 @@ We welcome contributions! Here are some areas where you can help:
 - **Documentation** enhancements
 
 ### Development Setup
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
+1. Fork the repository and create a feature branch
+2. Follow [INSTALLATION.md](INSTALLATION.md) for setup
+3. Review [docs/REFACTORING_DESIGN.md](docs/REFACTORING_DESIGN.md) for architecture
+4. Make your changes with tests
 5. Submit a pull request
 
 ## 📄 License
 
 This project is open source. Please see the license file for details.
 
-## 👤 Author
-
-**William**  
-*AI Photonic Physical Verification*
-
 ## 🔗 Links
 
-- **Repository**: [GitHub](https://github.com/nguyennm1024/ai-photonic-physical-verification)
-- **Google AI Studio**: [Get API Key](https://makersuite.google.com/app/apikey)
-- **Issues**: [Report Bugs](https://github.com/nguyennm1024/ai-photonic-physical-verification/issues)
+- [GitHub Repository](https://github.com/nguyennm1024/ai-photonic-physical-verification)
+- [Google AI Studio - Get API Key](https://makersuite.google.com/app/apikey)
+- [Report Issues](https://github.com/nguyennm1024/ai-photonic-physical-verification/issues)
 
 ## 📈 Project Status
 
-**Current Version**: 1.0.0  
-**Status**: Active Development  
-**Last Updated**: August 2025
+**Current Version**: 2.1.0
+**Status**: Active Development
+**Last Updated**: October 2025
 
 ### Recent Updates
-- Initial release with complete GUI application
-- AI-powered discontinuity detection
-- Virtual tile system implementation
-- ROI analysis capabilities
-- Comprehensive export functionality
 
----
+**v2.1 (October 2025) - UI/UX Enhancements:**
+- Visual status indicators (🟢/🔴/🟠), responsive design, enhanced ROI selection
+- Accurate coordinate transformation, resolution-aware caching
+- Three-category classification, updated defaults (50×50 grid)
 
-*For detailed setup instructions, see the installation section above. For support, please open an issue on GitHub.*
+**v2.0 (October 2025) - Major Refactoring:**
+- Modular architecture with 24+ modules, comprehensive testing
+- Validated with real 4.5MB GDS files
+
+**v1.0 (August 2025) - Initial Release:**
+- Complete GUI with AI-powered discontinuity detection
