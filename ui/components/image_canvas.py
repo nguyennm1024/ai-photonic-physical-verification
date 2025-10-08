@@ -38,8 +38,14 @@ class ImageCanvas(ttk.Frame):
         # ROI selection state
         self.roi_selecting = False
         self.roi_start = None
-        self.roi_rect = None
+        self.roi_temp_rect = None  # Temporary rectangle while dragging
+        self.roi_rectangles = []  # List of permanent ROI rectangles
+        self.selected_roi_rect = None  # Currently selected ROI for deletion
         self.roi_callback: Optional[Callable[[Tuple[int, int, int, int]], None]] = None
+        
+        # Tile selection state
+        self.tile_click_callback: Optional[Callable[[int, int], None]] = None  # (row, col)
+        self.grid_config = None  # Store grid config for tile selection
         
         # Current image
         self.current_image = None
@@ -63,10 +69,13 @@ class ImageCanvas(ttk.Frame):
         # Canvas widget (NO toolbar - cleaner interface)
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         
-        # Bind mouse events for ROI selection
+        # Bind mouse events for ROI selection and tile click
         self.canvas.mpl_connect('button_press_event', self._on_mouse_press)
         self.canvas.mpl_connect('button_release_event', self._on_mouse_release)
         self.canvas.mpl_connect('motion_notify_event', self._on_mouse_move)
+        
+        # Bind keyboard events for ROI deletion
+        self.canvas.mpl_connect('key_press_event', self._on_key_press)
     
     def display_image(self, image, grid_config=None):
         """
@@ -77,6 +86,8 @@ class ImageCanvas(ttk.Frame):
             grid_config: Optional GridConfig to overlay tile grid
         """
         self.current_image = image
+        self.grid_config = grid_config  # Store for tile selection
+        
         self.ax.clear()
         self.ax.set_facecolor('white')
         self.ax.imshow(image)
@@ -85,7 +96,7 @@ class ImageCanvas(ttk.Frame):
         # Draw grid overlay if provided
         if grid_config:
             self._draw_grid_overlay(image, grid_config)
-            self.ax.set_title(f"Layout View - {grid_config.rows}x{grid_config.cols} Grid", 
+            self.ax.set_title(f"Layout View - {grid_config.rows}x{grid_config.cols} Grid - Click tile to view", 
                             fontsize=12, fontweight='bold')
         else:
             self.ax.set_title("Layout View", fontsize=12, fontweight='bold')
@@ -112,24 +123,23 @@ class ImageCanvas(ttk.Frame):
         tile_width = width / grid_config.cols
         tile_height = height / grid_config.rows
         
-        # Draw vertical lines
+        # Draw vertical lines (very subtle)
         for i in range(grid_config.cols + 1):
             x = i * tile_width
-            self.ax.axvline(x=x, color='cyan', linewidth=0.5, alpha=0.6, linestyle='--')
+            self.ax.axvline(x=x, color='lightblue', linewidth=0.3, alpha=0.3, linestyle=':')
         
-        # Draw horizontal lines
+        # Draw horizontal lines (very subtle)
         for i in range(grid_config.rows + 1):
             y = i * tile_height
-            self.ax.axhline(y=y, color='cyan', linewidth=0.5, alpha=0.6, linestyle='--')
+            self.ax.axhline(y=y, color='lightblue', linewidth=0.3, alpha=0.3, linestyle=':')
         
-        # Add text in corner
+        # Add subtle text in corner
         self.ax.text(
             10, 20,
-            f"Tile Grid: {grid_config.rows}×{grid_config.cols} ({grid_config.overlap}% overlap)",
-            color='cyan',
-            fontsize=10,
-            fontweight='bold',
-            bbox=dict(boxstyle='round', facecolor='white', alpha=0.8, edgecolor='cyan')
+            f"{grid_config.rows}×{grid_config.cols} grid",
+            color='gray',
+            fontsize=9,
+            bbox=dict(boxstyle='round', facecolor='white', alpha=0.7, edgecolor='lightgray', linewidth=1)
         )
     
     def clear_image(self):
@@ -149,54 +159,127 @@ class ImageCanvas(ttk.Frame):
         """
         self.roi_selecting = True
         self.roi_callback = callback
-        self.ax.set_title("Layout View - Click & Drag to Select ROI")
+        self.ax.set_title("ROI Mode - Draw rectangles | Click to select | Delete key to remove", 
+                        fontsize=11, fontweight='bold')
         self.canvas.draw()
     
     def disable_roi_selection(self):
-        """Disable ROI selection mode"""
+        """Disable ROI selection mode (keeps drawn ROIs visible)"""
         self.roi_selecting = False
         self.roi_callback = None
-        self.ax.set_title("Layout View")
+        
+        # Remove temporary rectangle if any
+        if self.roi_temp_rect:
+            self.roi_temp_rect.remove()
+            self.roi_temp_rect = None
+        
+        if self.grid_config:
+            self.ax.set_title(f"Layout View - {self.grid_config.rows}x{self.grid_config.cols} Grid - Click tile to view", 
+                            fontsize=12, fontweight='bold')
+        else:
+            self.ax.set_title("Layout View", fontsize=12, fontweight='bold')
         self.canvas.draw()
     
+    def clear_all_rois(self):
+        """Clear all ROI rectangles from canvas"""
+        for roi_rect in self.roi_rectangles:
+            roi_rect.remove()
+        self.roi_rectangles.clear()
+        
+        if self.roi_temp_rect:
+            self.roi_temp_rect.remove()
+            self.roi_temp_rect = None
+        
+        self.canvas.draw()
+    
+    def bind_tile_click(self, callback: Callable[[int, int], None]):
+        """
+        Bind callback for tile clicks.
+        
+        Args:
+            callback: Function to call with (row, col) when tile is clicked
+        """
+        self.tile_click_callback = callback
+    
     def _on_mouse_press(self, event):
-        """Handle mouse press for ROI selection"""
-        if not self.roi_selecting or event.inaxes != self.ax:
+        """Handle mouse press for ROI selection/selection or tile click"""
+        if event.inaxes != self.ax:
             return
         
-        self.roi_start = (event.xdata, event.ydata)
+        click_x, click_y = event.xdata, event.ydata
         
-        # Remove previous rectangle if exists
-        if self.roi_rect:
-            self.roi_rect.remove()
-            self.roi_rect = None
+        # Check if clicking on an existing ROI rectangle (for selection)
+        clicked_roi = self._find_roi_at_point(click_x, click_y)
+        if clicked_roi is not None:
+            # Select this ROI
+            self._select_roi(clicked_roi)
+            return
+        
+        # Handle ROI drawing mode (start drawing new ROI)
+        if self.roi_selecting:
+            # Deselect any selected ROI
+            if self.selected_roi_rect is not None:
+                self._deselect_roi()
+            
+            # Start drawing new ROI
+            self.roi_start = (click_x, click_y)
+            
+            # Remove previous temporary rectangle if exists
+            if self.roi_temp_rect:
+                self.roi_temp_rect.remove()
+                self.roi_temp_rect = None
+            return
+        
+        # Handle tile click (only if grid is configured and NOT in ROI mode)
+        if self.grid_config and self.tile_click_callback and not self.roi_selecting:
+            # Calculate which tile was clicked
+            if hasattr(self.current_image, 'shape'):
+                height, width = self.current_image.shape[:2]
+            else:
+                width, height = self.current_image.size
+            
+            tile_width = width / self.grid_config.cols
+            tile_height = height / self.grid_config.rows
+            
+            col = int(click_x / tile_width)
+            row = int(click_y / tile_height)
+            
+            # Ensure within bounds
+            col = max(0, min(col, self.grid_config.cols - 1))
+            row = max(0, min(row, self.grid_config.rows - 1))
+            
+            print(f"🖱️  Tile click detected: row={row}, col={col}")
+            
+            # Call the callback with row, col
+            self.tile_click_callback(row, col)
     
     def _on_mouse_move(self, event):
         """Handle mouse move for ROI selection"""
         if not self.roi_selecting or not self.roi_start or event.inaxes != self.ax:
             return
         
-        # Update rectangle
+        # Update temporary rectangle
         x1, y1 = self.roi_start
         x2, y2 = event.xdata, event.ydata
         
-        # Remove old rectangle
-        if self.roi_rect:
-            self.roi_rect.remove()
+        # Remove old temporary rectangle
+        if self.roi_temp_rect:
+            self.roi_temp_rect.remove()
         
-        # Draw new rectangle
+        # Draw new temporary rectangle
         width = x2 - x1
         height = y2 - y1
-        self.roi_rect = Rectangle(
+        self.roi_temp_rect = Rectangle(
             (x1, y1),
             width,
             height,
             fill=False,
             edgecolor='red',
             linewidth=2,
-            linestyle='--'
+            linestyle='--',
+            alpha=0.7
         )
-        self.ax.add_patch(self.roi_rect)
+        self.ax.add_patch(self.roi_temp_rect)
         self.canvas.draw()
     
     def _on_mouse_release(self, event):
@@ -215,49 +298,133 @@ class ImageCanvas(ttk.Frame):
         # Convert to integers
         x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
         
+        # Remove temporary rectangle
+        if self.roi_temp_rect:
+            self.roi_temp_rect.remove()
+            self.roi_temp_rect = None
+        
+        # Create permanent ROI rectangle
+        width = x2 - x1
+        height = y2 - y1
+        roi_rect = Rectangle(
+            (x1, y1),
+            width,
+            height,
+            fill=False,
+            edgecolor='red',
+            linewidth=2,
+            linestyle='-',
+            alpha=1.0
+        )
+        self.ax.add_patch(roi_rect)
+        self.roi_rectangles.append(roi_rect)
+        self.canvas.draw()
+        
         # Call callback
         if self.roi_callback:
             self.roi_callback((x1, y1, x2, y2))
         
-        # Reset
+        # Reset start point (keep selecting mode active for multiple ROIs)
         self.roi_start = None
     
     def draw_roi_rectangle(self, x1: int, y1: int, x2: int, y2: int, color: str = 'red'):
         """
-        Draw an ROI rectangle on the canvas.
+        Draw an ROI rectangle on the canvas (adds to existing ROIs).
         
         Args:
             x1, y1: Top-left corner
             x2, y2: Bottom-right corner
             color: Rectangle color
         """
-        # Remove old rectangle
-        if self.roi_rect:
-            self.roi_rect.remove()
-        
         # Draw new rectangle
         width = x2 - x1
         height = y2 - y1
-        self.roi_rect = Rectangle(
+        roi_rect = Rectangle(
             (x1, y1),
             width,
             height,
             fill=False,
             edgecolor=color,
             linewidth=2,
-            linestyle='--'
+            linestyle='-'
         )
-        self.ax.add_patch(self.roi_rect)
+        self.ax.add_patch(roi_rect)
+        self.roi_rectangles.append(roi_rect)
         self.canvas.draw()
     
     def clear_roi_rectangle(self):
-        """Clear ROI rectangle from canvas"""
-        if self.roi_rect:
-            self.roi_rect.remove()
-            self.roi_rect = None
-            self.canvas.draw()
+        """Clear all ROI rectangles from canvas (alias for clear_all_rois)"""
+        self.clear_all_rois()
     
     def refresh(self):
         """Refresh the canvas"""
         self.canvas.draw()
+    
+    def _find_roi_at_point(self, x, y):
+        """
+        Find ROI rectangle at the given point.
+        
+        Args:
+            x, y: Point coordinates
+            
+        Returns:
+            Rectangle object if found, None otherwise
+        """
+        for roi_rect in self.roi_rectangles:
+            # Get rectangle bounds
+            rect_x = roi_rect.get_x()
+            rect_y = roi_rect.get_y()
+            rect_width = roi_rect.get_width()
+            rect_height = roi_rect.get_height()
+            
+            # Check if point is inside rectangle
+            if (rect_x <= x <= rect_x + rect_width and 
+                rect_y <= y <= rect_y + rect_height):
+                return roi_rect
+        
+        return None
+    
+    def _select_roi(self, roi_rect):
+        """
+        Select an ROI rectangle (highlight it).
+        
+        Args:
+            roi_rect: Rectangle object to select
+        """
+        # Deselect previous
+        if self.selected_roi_rect is not None:
+            self._deselect_roi()
+        
+        # Highlight the selected ROI
+        self.selected_roi_rect = roi_rect
+        roi_rect.set_edgecolor('yellow')
+        roi_rect.set_linewidth(3)
+        self.canvas.draw()
+        
+        print(f"✅ ROI selected (click Delete to remove)")
+    
+    def _deselect_roi(self):
+        """Deselect currently selected ROI."""
+        if self.selected_roi_rect is not None:
+            self.selected_roi_rect.set_edgecolor('red')
+            self.selected_roi_rect.set_linewidth(2)
+            self.selected_roi_rect = None
+            self.canvas.draw()
+    
+    def _on_key_press(self, event):
+        """
+        Handle keyboard events.
+        
+        Args:
+            event: Keyboard event
+        """
+        if event.key == 'delete' or event.key == 'backspace':
+            # Delete selected ROI
+            if self.selected_roi_rect is not None:
+                print(f"🗑️  Deleting selected ROI")
+                self.selected_roi_rect.remove()
+                self.roi_rectangles.remove(self.selected_roi_rect)
+                self.selected_roi_rect = None
+                self.canvas.draw()
+                print(f"✅ ROI deleted")
 
