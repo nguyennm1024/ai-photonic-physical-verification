@@ -71,6 +71,10 @@ echo "export GOOGLE_API_KEY=\"$api_key\"" >> "$SHELL_RC"
 # Automatically activate the API key in current session
 export GOOGLE_API_KEY="$api_key"
 
+# Also source the shell config to ensure all changes are loaded
+echo "🔄 Loading updated shell configuration..."
+source "$SHELL_RC"
+
 echo ""
 echo -e "${GREEN}================================${NC}"
 echo -e "${GREEN}✅ API Key Configured & Activated!${NC}"
@@ -82,7 +86,7 @@ echo ""
 echo -e "${GREEN}✅ API key is now active and ready to use!${NC}"
 echo ""
 echo -e "${YELLOW}📝 NOTE:${NC}"
-echo "  • API key is now active in this session"
+echo "  • API key is now active in this session (automatically loaded)"
 echo "  • New terminal sessions will automatically load it from $SHELL_RC"
 echo "  • You can verify it's set by running: echo \$GOOGLE_API_KEY"
 echo ""
