@@ -2,11 +2,12 @@
 # Google API Key Setup Script
 # 
 # USAGE:
-#   To activate API key in current session, use:
+#   Method 1 (Recommended - Automatic activation):
 #     source ./setup_api_key.sh
 #   
-#   To just configure without activating:
+#   Method 2 (Manual activation):
 #     ./setup_api_key.sh
+#     Then copy and run the export command shown
 
 # Colors
 GREEN='\033[0;32m'
@@ -29,10 +30,10 @@ echo -e "${BLUE}================================${NC}"
 echo ""
 
 if [[ "$SOURCED" == true ]]; then
-    echo -e "${GREEN}✅ Script is being sourced - API key will be active in current session!${NC}"
+    echo -e "${GREEN}✅ Script is being sourced - API key will be active immediately!${NC}"
 else
-    echo -e "${YELLOW}⚠️  Script is being executed - API key will need manual activation${NC}"
-    echo -e "${YELLOW}💡 Tip: Use 'source ./setup_api_key.sh' to activate in current session${NC}"
+    echo -e "${YELLOW}⚠️  Script is being executed - you'll need to run one command after this${NC}"
+    echo -e "${BLUE}💡 Tip: Next time use 'source ./setup_api_key.sh' for automatic activation${NC}"
 fi
 echo ""
 
@@ -183,18 +184,18 @@ if [[ "$SOURCED" == true ]]; then
     echo ""
     echo "Current value: $GOOGLE_API_KEY"
 else
-    # Script was executed - need manual activation
-    echo -e "${YELLOW}⚠️  IMPORTANT - To activate in your current shell, run:${NC}"
+    # Script was executed - provide one-liner for activation
+    echo -e "${GREEN}✅ Configuration complete!${NC}"
     echo ""
-    echo -e "${GREEN}  source $SHELL_RC${NC}"
+    echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
+    echo -e "${YELLOW}🚀 COPY AND RUN THIS COMMAND TO ACTIVATE:${NC}"
+    echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "${BLUE}💡 Or use this one-liner to activate and verify:${NC}"
-    echo -e "${GREEN}  source $SHELL_RC && echo \"API Key: \$GOOGLE_API_KEY\"${NC}"
+    echo -e "${GREEN}export GOOGLE_API_KEY=\"$api_key\"${NC}"
     echo ""
-    echo -e "${BLUE}🚀 Or run this to activate immediately:${NC}"
-    echo -e "${GREEN}  export GOOGLE_API_KEY=\"$api_key\"${NC}"
+    echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "${BLUE}🔍 Verify the key is set:${NC}"
+    echo -e "${BLUE}💡 After running the command above, verify with:${NC}"
     echo -e "${GREEN}  echo \$GOOGLE_API_KEY${NC}"
 fi
 echo ""
