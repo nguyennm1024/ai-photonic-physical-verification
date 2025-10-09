@@ -486,8 +486,7 @@ test_ui_components.py
 ui/components/roi_controls.py
 ui/components/tile_viewer.py
 
-# Empty handler directories
-ui/handlers/
+# Empty style directories
 ui/styles/
 
 # Ignore all tests
