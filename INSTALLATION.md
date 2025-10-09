@@ -35,27 +35,60 @@ python --version  # Should show 3.9.0 or higher
 - **Ubuntu/Debian**: `sudo apt-get install python3.11`
 - **Windows**: Download from [python.org](https://www.python.org/downloads/)
 
-#### 2. tkinter (GUI Library)
+#### 2. tkinter & Tcl/Tk (GUI Library)
 
-**Usually pre-installed with Python, but may need separate installation on Linux:**
+**Tkinter is Python's standard GUI library, requires Tcl/Tk runtime.**
+
+**Test if Tcl/Tk is available:**
 
 ```bash
-# Test if tkinter is available
-python -c "import tkinter; print('✅ tkinter OK')"
+# Test tkinter/Tcl/Tk availability
+python3 -m tkinter
+# Should open a small Tk window if working correctly
 ```
 
-**If tkinter is missing:**
+**If the test fails, install Tcl/Tk for your platform:**
+
+##### macOS with Homebrew
 
 ```bash
-# Ubuntu/Debian
+# 1. Install Tcl/Tk
+brew install tcl-tk
+
+# 2. Set environment variables (add to ~/.zshrc or ~/.bash_profile)
+echo 'export TCL_LIBRARY=/opt/homebrew/opt/tcl-tk/lib/tcl9.0:/opt/homebrew/opt/tcl-tk/lib/tcl8.6' >> ~/.zshrc
+echo 'export TK_LIBRARY=/opt/homebrew/opt/tcl-tk/lib/tk9.0:/opt/homebrew/opt/tcl-tk/lib/tk8.6' >> ~/.zshrc
+echo 'export PATH=/opt/homebrew/opt/tcl-tk/bin:$PATH' >> ~/.zshrc
+
+# 3. Reload shell configuration
+source ~/.zshrc
+
+# 4. If using uv-managed Python, reinstall Python
+uv python uninstall
+uv python install
+
+# 5. Verify
+python3 -m tkinter
+```
+
+##### Ubuntu/Debian Linux
+
+```bash
+sudo apt-get update
 sudo apt-get install python3-tk
-
-# Fedora
-sudo dnf install python3-tkinter
-
-# macOS (usually pre-installed)
-# Windows (usually pre-installed)
 ```
+
+##### Fedora/RHEL Linux
+
+```bash
+sudo dnf install python3-tkinter
+```
+
+##### Windows
+
+Usually pre-installed with Python from python.org. If missing:
+1. Reinstall Python from [python.org](https://www.python.org/downloads/)
+2. During installation, ensure "tcl/tk and IDLE" is checked
 
 #### 3. Google Gemini API Key (REQUIRED)
 
@@ -265,8 +298,8 @@ echo ""
 echo -n "Python version: "
 python --version
 
-# tkinter
-python -c "import tkinter; print('✅ tkinter OK')" 2>/dev/null || echo "❌ tkinter MISSING"
+# tkinter/Tcl/Tk
+python -c "import tkinter; tkinter.Tk().destroy(); print('✅ tkinter/Tcl/Tk OK')" 2>/dev/null || echo "❌ tkinter/Tcl/Tk MISSING"
 
 # Core dependencies
 python -c "import gdspy; print('✅ gdspy OK')" 2>/dev/null || echo "❌ gdspy MISSING"
@@ -344,19 +377,45 @@ python test_real_gds.py
 
 ### Installation Issues
 
-#### ❌ "ModuleNotFoundError: No module named 'tkinter'"
+#### ❌ "ModuleNotFoundError: No module named '_tkinter'" or "Tcl/Tk runtime not available"
 
-**Problem**: tkinter not installed  
+**Problem**: Tcl/Tk libraries not installed or not configured
 **Solution**:
+
+**macOS with Homebrew:**
 ```bash
-# Ubuntu/Debian
-sudo apt-get install python3-tk
+# 1. Install Tcl/Tk
+brew install tcl-tk
 
-# Fedora
-sudo dnf install python3-tkinter
+# 2. Set environment variables (add to ~/.zshrc or ~/.bash_profile)
+export TCL_LIBRARY=/opt/homebrew/opt/tcl-tk/lib/tcl9.0:/opt/homebrew/opt/tcl-tk/lib/tcl8.6
+export TK_LIBRARY=/opt/homebrew/opt/tcl-tk/lib/tk9.0:/opt/homebrew/opt/tcl-tk/lib/tk8.6
+export PATH=/opt/homebrew/opt/tcl-tk/bin:$PATH
 
-# macOS/Windows: Usually pre-installed, reinstall Python if missing
+# 3. Reload shell
+source ~/.zshrc
+
+# 4. If using uv-managed Python, reinstall
+uv python uninstall && uv python install
+
+# 5. Test
+python3 -m tkinter
 ```
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install python3-tk
+```
+
+**Fedora/RHEL:**
+```bash
+sudo dnf install python3-tkinter
+```
+
+**Windows:**
+- Reinstall Python from python.org
+- During installation, check "tcl/tk and IDLE"
 
 ---
 
@@ -513,14 +572,30 @@ pip install -e .
 
 **Recommended Installation:**
 ```bash
-brew install python@3.11 librsvg
+# Install Python and required system packages
+brew install python@3.11 tcl-tk librsvg
+
+# Configure Tcl/Tk environment variables (add to ~/.zshrc)
+echo 'export TCL_LIBRARY=/opt/homebrew/opt/tcl-tk/lib/tcl9.0:/opt/homebrew/opt/tcl-tk/lib/tcl8.6' >> ~/.zshrc
+echo 'export TK_LIBRARY=/opt/homebrew/opt/tcl-tk/lib/tk9.0:/opt/homebrew/opt/tcl-tk/lib/tk8.6' >> ~/.zshrc
+echo 'export PATH=/opt/homebrew/opt/tcl-tk/bin:$PATH' >> ~/.zshrc
+source ~/.zshrc
+
+# Install Python dependencies
 pip install -e .
+
+# Set API key
 export GOOGLE_API_KEY='your_key'
+
+# Test Tcl/Tk
+python3 -m tkinter
 ```
 
 **Common Issues:**
 - Python from Xcode might be outdated → Use Homebrew Python
 - Multiple Python versions → Use `python3` explicitly
+- Tcl/Tk not found → Set environment variables as shown above
+- Using uv-managed Python → Run `uv python uninstall && uv python install` after installing tcl-tk
 
 ---
 
@@ -529,7 +604,10 @@ export GOOGLE_API_KEY='your_key'
 **System Packages First:**
 ```bash
 sudo apt-get update
-sudo apt-get install python3 python3-pip python3-tk librsvg2-bin
+sudo apt-get install python3 python3-pip python3-tk python3-dev librsvg2-bin
+
+# Test Tcl/Tk installation
+python3 -m tkinter
 ```
 
 **Then Python Packages:**
@@ -548,7 +626,12 @@ pip3 install -e .
 
 **System Packages:**
 ```bash
-sudo dnf install python3 python3-pip python3-tkinter librsvg2-tools
+sudo dnf install python3 python3-pip python3-tkinter python3-devel librsvg2-tools
+
+# Test Tcl/Tk installation
+python3 -m tkinter
+
+# Install Python dependencies
 pip3 install -e .
 ```
 
@@ -620,7 +703,7 @@ If you encounter issues not covered here:
 Before running the application, verify:
 
 - [ ] Python 3.9+ installed (`python --version`)
-- [ ] tkinter working (`python -c "import tkinter"`)
+- [ ] Tcl/Tk working (`python3 -m tkinter` - should open window)
 - [ ] All pip dependencies installed (`pip install -e .`)
 - [ ] GOOGLE_API_KEY set (`echo $GOOGLE_API_KEY`)
 - [ ] At least one SVG converter installed (`which rsvg-convert`)
