@@ -36,10 +36,12 @@ class TileReviewPanel(ttk.LabelFrame):
         # Callbacks
         self.prev_callback: Optional[Callable] = None
         self.next_callback: Optional[Callable] = None
-        self.classify_callback: Optional[Callable[[str], None]] = None
-        
+        self.classify_callback: Optional[Callable[[int, int, str], None]] = None
+
         # Current state
         self.current_image_ref = None  # Keep reference to prevent garbage collection
+        self.current_tile_row: Optional[int] = None
+        self.current_tile_col: Optional[int] = None
         
         # Setup UI
         self._setup_widgets()
@@ -151,6 +153,15 @@ class TileReviewPanel(ttk.LabelFrame):
             width=18
         )
         self.discontinuity_button.pack(side=tk.LEFT, padx=5)
+
+        self.no_waveguide_button = ttk.Button(
+            btn_container,
+            text="🔍 No waveguide",
+            command=lambda: self._on_classify_clicked('no_waveguide'),
+            state='disabled',
+            width=18
+        )
+        self.no_waveguide_button.pack(side=tk.LEFT, padx=5)
     
     def bind_prev_command(self, callback: Callable[[], None]):
         """Bind callback for previous button"""
@@ -160,8 +171,8 @@ class TileReviewPanel(ttk.LabelFrame):
         """Bind callback for next button"""
         self.next_callback = callback
     
-    def bind_classify_command(self, callback: Callable[[str], None]):
-        """Bind callback for classification"""
+    def bind_classify_command(self, callback: Callable[[int, int, str], None]):
+        """Bind callback for classification (row, col, classification)"""
         self.classify_callback = callback
     
     def _on_prev_clicked(self):
@@ -176,10 +187,20 @@ class TileReviewPanel(ttk.LabelFrame):
     
     def _on_classify_clicked(self, classification: str):
         """Handle classification button click"""
-        if self.classify_callback:
-            self.classify_callback(classification)
+        print(f"🖱️  Classification button clicked: {classification}")
+        print(f"   Current tile: row={self.current_tile_row}, col={self.current_tile_col}")
+        print(f"   Callback bound: {self.classify_callback is not None}")
+
+        if self.classify_callback and self.current_tile_row is not None and self.current_tile_col is not None:
+            print(f"   ✅ Calling classify callback with ({self.current_tile_row}, {self.current_tile_col}, '{classification}')")
+            self.classify_callback(self.current_tile_row, self.current_tile_col, classification)
+        else:
+            if not self.classify_callback:
+                print(f"   ❌ No callback bound!")
+            if self.current_tile_row is None or self.current_tile_col is None:
+                print(f"   ❌ No current tile selected!")
     
-    def display_tile(self, image: Image.Image, row: int, col: int, index: int, ai_result: str = "", classification: str = None):
+    def display_tile(self, image: Image.Image, row: int, col: int, index: int, ai_result: str = "", classification: str = None, is_user_classification: bool = False):
         """
         Display tile for review.
 
@@ -189,8 +210,14 @@ class TileReviewPanel(ttk.LabelFrame):
             col: Tile column
             index: Tile index
             ai_result: AI analysis result text
-            classification: AI classification result ('continuity', 'discontinuity', 'no_waveguide')
+            classification: Classification result ('continuity', 'discontinuity', 'no_waveguide')
+            is_user_classification: Whether this is a user classification (shows [USER] tag)
         """
+        # Store current tile coordinates for classification
+        self.current_tile_row = row
+        self.current_tile_col = col
+        print(f"📍 Tile review: Stored current tile coordinates - row={row}, col={col}")
+
         # Display image
         try:
             # Resize to fit - use available space (larger now)
@@ -220,7 +247,11 @@ class TileReviewPanel(ttk.LabelFrame):
             self.ai_result_text.insert('1.0', ai_result)
             # Determine status from classification if available
             if classification:
-                self._update_status_indicator(classification)
+                # Use public method if user classification (shows [USER] tag)
+                if is_user_classification:
+                    self.update_status_indicator(classification)
+                else:
+                    self._update_status_indicator(classification)
             else:
                 self.status_label.config(text="", foreground='black')
         else:
@@ -232,11 +263,14 @@ class TileReviewPanel(ttk.LabelFrame):
         self.next_button.config(state='normal')
         self.continuous_button.config(state='normal')
         self.discontinuity_button.config(state='normal')
+        self.no_waveguide_button.config(state='normal')
     
     def clear_display(self):
         """Clear tile display"""
         self.tile_image_label.config(image='', text="No tile selected")
         self.current_image_ref = None
+        self.current_tile_row = None
+        self.current_tile_col = None
         self.tile_info_label.config(text="")
         self.ai_result_text.delete('1.0', tk.END)
         self.status_label.config(text="", foreground='black')
@@ -248,6 +282,7 @@ class TileReviewPanel(ttk.LabelFrame):
         self.next_button.config(state='normal')
         self.continuous_button.config(state='normal')
         self.discontinuity_button.config(state='normal')
+        self.no_waveguide_button.config(state='normal')
     
     def disable_all(self):
         """Disable all controls"""
@@ -255,6 +290,7 @@ class TileReviewPanel(ttk.LabelFrame):
         self.next_button.config(state='disabled')
         self.continuous_button.config(state='disabled')
         self.discontinuity_button.config(state='disabled')
+        self.no_waveguide_button.config(state='disabled')
     
     def _update_status_indicator(self, classification: str):
         """
@@ -275,6 +311,31 @@ class TileReviewPanel(ttk.LabelFrame):
         else:
             # Unknown classification - show neutral
             self.status_label.config(text="⚪ Analyzed", foreground='gray')
+
+    def update_status_indicator(self, classification: str):
+        """
+        Public method to update status indicator (for user classification).
+
+        Args:
+            classification: Classification result ('continuity', 'discontinuity', 'no_waveguide')
+        """
+        print(f"📊 TileReviewPanel.update_status_indicator() called with: {classification}")
+        classification_lower = classification.lower().strip()
+
+        # Map classification to status - show as USER OVERRIDE
+        if classification_lower == 'discontinuity':
+            self.status_label.config(text="🔴 Discontinuity [USER]", foreground='red')
+            print(f"   ✅ Status label updated to: 🔴 Discontinuity [USER]")
+        elif classification_lower == 'no_waveguide':
+            self.status_label.config(text="🟠 No waveguide [USER]", foreground='orange')
+            print(f"   ✅ Status label updated to: 🟠 No waveguide [USER]")
+        elif classification_lower in ['continuity', 'continuous']:
+            self.status_label.config(text="🟢 Continuity [USER]", foreground='green')
+            print(f"   ✅ Status label updated to: 🟢 Continuity [USER]")
+        else:
+            # Unknown classification
+            self.status_label.config(text="⚪ Classified [USER]", foreground='gray')
+            print(f"   ⚠️  Status label updated to: ⚪ Classified [USER] (unknown: {classification})")
 
     def highlight_classification(self, classification: Optional[str]):
         """
