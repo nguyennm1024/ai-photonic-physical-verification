@@ -13,21 +13,82 @@ echo -e "${BLUE}Google API Key Setup${NC}"
 echo -e "${BLUE}================================${NC}"
 echo ""
 
-# Detect shell config file
-if [[ -f "$HOME/.zshrc" ]]; then
-    SHELL_RC="$HOME/.zshrc"
-    SHELL_NAME="zsh"
-elif [[ -f "$HOME/.bashrc" ]]; then
-    SHELL_RC="$HOME/.bashrc"
-    SHELL_NAME="bash"
-elif [[ -f "$HOME/.bash_profile" ]]; then
-    SHELL_RC="$HOME/.bash_profile"
-    SHELL_NAME="bash"
-else
-    SHELL_RC="$HOME/.zshrc"
-    SHELL_NAME="zsh"
-    touch "$SHELL_RC"
-fi
+# Detect OS and shell
+detect_os() {
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        OS="macos"
+    elif [[ -f /etc/debian_version ]]; then
+        OS="ubuntu"
+    elif [[ -f /etc/fedora-release ]]; then
+        OS="fedora"
+    elif [[ -f /etc/redhat-release ]]; then
+        OS="rhel"
+    else
+        OS="linux"
+    fi
+}
+
+# Detect shell config file based on OS and available shells
+detect_shell_config() {
+    # Check current shell first
+    CURRENT_SHELL=$(basename "$SHELL")
+    
+    if [[ "$CURRENT_SHELL" == "zsh" ]] && [[ -f "$HOME/.zshrc" ]]; then
+        SHELL_RC="$HOME/.zshrc"
+        SHELL_NAME="zsh"
+    elif [[ "$CURRENT_SHELL" == "bash" ]]; then
+        # For bash, prefer .bashrc on Linux, .bash_profile on macOS
+        if [[ "$OS" == "macos" ]] && [[ -f "$HOME/.bash_profile" ]]; then
+            SHELL_RC="$HOME/.bash_profile"
+            SHELL_NAME="bash"
+        elif [[ -f "$HOME/.bashrc" ]]; then
+            SHELL_RC="$HOME/.bashrc"
+            SHELL_NAME="bash"
+        elif [[ -f "$HOME/.bash_profile" ]]; then
+            SHELL_RC="$HOME/.bash_profile"
+            SHELL_NAME="bash"
+        else
+            # Create appropriate file based on OS
+            if [[ "$OS" == "macos" ]]; then
+                SHELL_RC="$HOME/.bash_profile"
+            else
+                SHELL_RC="$HOME/.bashrc"
+            fi
+            SHELL_NAME="bash"
+            touch "$SHELL_RC"
+        fi
+    else
+        # Fallback: try common config files
+        if [[ -f "$HOME/.zshrc" ]]; then
+            SHELL_RC="$HOME/.zshrc"
+            SHELL_NAME="zsh"
+        elif [[ -f "$HOME/.bashrc" ]]; then
+            SHELL_RC="$HOME/.bashrc"
+            SHELL_NAME="bash"
+        elif [[ -f "$HOME/.bash_profile" ]]; then
+            SHELL_RC="$HOME/.bash_profile"
+            SHELL_NAME="bash"
+        else
+            # Default based on OS
+            if [[ "$OS" == "macos" ]]; then
+                SHELL_RC="$HOME/.zshrc"
+                SHELL_NAME="zsh"
+            else
+                SHELL_RC="$HOME/.bashrc"
+                SHELL_NAME="bash"
+            fi
+            touch "$SHELL_RC"
+        fi
+    fi
+}
+
+# Run detection
+detect_os
+detect_shell_config
+
+echo "🔍 Detected: $OS with $SHELL_NAME shell"
+echo "📁 Using config file: $SHELL_RC"
+echo ""
 
 echo "1️⃣  Get your FREE Google API Key:"
 echo "   👉 https://makersuite.google.com/app/apikey"
@@ -50,10 +111,11 @@ if grep -q "GOOGLE_API_KEY" "$SHELL_RC" 2>/dev/null; then
     read -p "Do you want to update it? (y/n): " update_choice
 
     if [[ "$update_choice" == "y" || "$update_choice" == "Y" ]]; then
-        # Remove old entry
-        if [[ "$OSTYPE" == "darwin"* ]]; then
+        # Remove old entry (handle different sed implementations)
+        if [[ "$OS" == "macos" ]]; then
             sed -i '' '/export GOOGLE_API_KEY/d' "$SHELL_RC"
         else
+            # Linux (Ubuntu, Fedora, etc.)
             sed -i '/export GOOGLE_API_KEY/d' "$SHELL_RC"
         fi
         echo -e "${GREEN}✅ Removed old API key${NC}"
@@ -89,6 +151,16 @@ echo -e "${YELLOW}📝 NOTE:${NC}"
 echo "  • API key is now active in this session (automatically loaded)"
 echo "  • New terminal sessions will automatically load it from $SHELL_RC"
 echo "  • You can verify it's set by running: echo \$GOOGLE_API_KEY"
+echo ""
+if [[ "$OS" == "macos" ]]; then
+    echo -e "${BLUE}🍎 macOS:${NC} API key will be available in new Terminal windows"
+elif [[ "$OS" == "ubuntu" ]]; then
+    echo -e "${BLUE}🐧 Ubuntu:${NC} API key will be available in new terminal sessions"
+elif [[ "$OS" == "fedora" ]]; then
+    echo -e "${BLUE}🎩 Fedora:${NC} API key will be available in new terminal sessions"
+else
+    echo -e "${BLUE}🐧 Linux:${NC} API key will be available in new terminal sessions"
+fi
 echo ""
 echo "Ready to start the application:"
 if [[ -d ".venv" ]]; then
