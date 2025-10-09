@@ -204,6 +204,37 @@ class StateManager:
             )
             self.state.tiles_data.append(tile)
             print(f"✅ Created tile ({row},{col}) metadata: classification={classification}")
+
+    def set_user_classification(self, row: int, col: int, user_classification: str):
+        """
+        Set user classification for a tile (overrides AI classification).
+
+        Args:
+            row: Tile row
+            col: Tile column
+            user_classification: User's classification ('continuity', 'discontinuity', 'no_waveguide')
+        """
+        # Find or create tile metadata
+        tile_found = False
+        for tile in self.state.tiles_data:
+            if tile.row == row and tile.col == col:
+                tile.user_classification = user_classification
+                tile_found = True
+                print(f"✅ User classification set for tile ({row},{col}): {user_classification}")
+                break
+
+        if not tile_found:
+            # Create new tile metadata with user classification
+            tile = TileMetadata(
+                filename=f"tile_{row}_{col}",
+                row=row,
+                col=col,
+                virtual=True,
+                analyzed=False,  # May not have been analyzed by AI yet
+                user_classification=user_classification
+            )
+            self.state.tiles_data.append(tile)
+            print(f"✅ Created tile ({row},{col}) metadata with user classification: {user_classification}")
     
     def set_tiles_data(self, tiles_data: List[TileMetadata]):
         """Update tiles data"""
@@ -218,25 +249,44 @@ class StateManager:
     def get_summary(self) -> Dict:
         """
         Get analysis summary statistics.
-        
+        User classification takes priority over AI classification.
+
         Returns:
             Dict with summary stats
         """
         total_tiles = len(self.state.tiles_data)
         analyzed_tiles = sum(1 for tile in self.state.tiles_data if tile.analyzed)
         flagged_tiles = len(self.state.flagged_tiles)
-        
-        classified_continuous = sum(1 for tile in self.state.tiles_data 
-                                   if tile.user_classification == 'continuous')
-        classified_discontinuity = sum(1 for tile in self.state.tiles_data 
-                                      if tile.user_classification == 'discontinuity')
-        
+
+        # Count classifications (user classification overrides AI)
+        classified_continuous = 0
+        classified_discontinuity = 0
+        classified_no_waveguide = 0
+        user_classified_count = 0
+
+        for tile in self.state.tiles_data:
+            # Get effective classification (user overrides AI)
+            classification = tile.user_classification or tile.classification
+
+            if tile.user_classification:
+                user_classified_count += 1
+
+            if classification:
+                if classification.lower() in ['continuous', 'continuity']:
+                    classified_continuous += 1
+                elif classification.lower() == 'discontinuity':
+                    classified_discontinuity += 1
+                elif classification.lower() == 'no_waveguide':
+                    classified_no_waveguide += 1
+
         return {
             'total_tiles': total_tiles,
             'analyzed_tiles': analyzed_tiles,
             'flagged_tiles': flagged_tiles,
             'classified_continuous': classified_continuous,
-            'classified_discontinuity': classified_discontinuity
+            'classified_discontinuity': classified_discontinuity,
+            'classified_no_waveguide': classified_no_waveguide,
+            'user_classified': user_classified_count
         }
     
     def get_current_tile(self) -> Optional[TileMetadata]:
