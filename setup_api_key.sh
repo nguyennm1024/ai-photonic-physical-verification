@@ -1,16 +1,39 @@
 #!/bin/bash
 # Google API Key Setup Script
+# 
+# USAGE:
+#   To activate API key in current session, use:
+#     source ./setup_api_key.sh
+#   
+#   To just configure without activating:
+#     ./setup_api_key.sh
 
 # Colors
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+RED='\033[0;31m'
 NC='\033[0m'
+
+# Check if script is being sourced or executed
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    SOURCED=false
+else
+    SOURCED=true
+fi
 
 echo ""
 echo -e "${BLUE}================================${NC}"
 echo -e "${BLUE}Google API Key Setup${NC}"
 echo -e "${BLUE}================================${NC}"
+echo ""
+
+if [[ "$SOURCED" == true ]]; then
+    echo -e "${GREEN}✅ Script is being sourced - API key will be active in current session!${NC}"
+else
+    echo -e "${YELLOW}⚠️  Script is being executed - API key will need manual activation${NC}"
+    echo -e "${YELLOW}💡 Tip: Use 'source ./setup_api_key.sh' to activate in current session${NC}"
+fi
 echo ""
 
 # Detect OS and shell
@@ -150,24 +173,42 @@ echo -e "${GREEN}================================${NC}"
 echo ""
 echo "API key added to: $SHELL_RC"
 echo ""
-echo -e "${YELLOW}⚠️  IMPORTANT - To activate in your current shell, run:${NC}"
-echo ""
-echo -e "${GREEN}  source $SHELL_RC${NC}"
-echo ""
-echo -e "${BLUE}💡 Or use this one-liner to activate and verify:${NC}"
-echo -e "${GREEN}  source $SHELL_RC && echo \"API Key: \$GOOGLE_API_KEY\"${NC}"
-echo ""
-echo -e "${BLUE}🚀 Or run this to activate immediately:${NC}"
-echo -e "${GREEN}  export GOOGLE_API_KEY=\"$api_key\"${NC}"
-echo ""
-echo -e "${BLUE}🔍 Verify the key is set:${NC}"
-echo -e "${GREEN}  echo \$GOOGLE_API_KEY${NC}"
+
+if [[ "$SOURCED" == true ]]; then
+    # Script was sourced - key is active in current session
+    echo -e "${GREEN}✅ API key is now active in your current session!${NC}"
+    echo ""
+    echo -e "${BLUE}🔍 Verify it's set:${NC}"
+    echo -e "${GREEN}  echo \$GOOGLE_API_KEY${NC}"
+    echo ""
+    echo "Current value: $GOOGLE_API_KEY"
+else
+    # Script was executed - need manual activation
+    echo -e "${YELLOW}⚠️  IMPORTANT - To activate in your current shell, run:${NC}"
+    echo ""
+    echo -e "${GREEN}  source $SHELL_RC${NC}"
+    echo ""
+    echo -e "${BLUE}💡 Or use this one-liner to activate and verify:${NC}"
+    echo -e "${GREEN}  source $SHELL_RC && echo \"API Key: \$GOOGLE_API_KEY\"${NC}"
+    echo ""
+    echo -e "${BLUE}🚀 Or run this to activate immediately:${NC}"
+    echo -e "${GREEN}  export GOOGLE_API_KEY=\"$api_key\"${NC}"
+    echo ""
+    echo -e "${BLUE}🔍 Verify the key is set:${NC}"
+    echo -e "${GREEN}  echo \$GOOGLE_API_KEY${NC}"
+fi
 echo ""
 echo -e "${YELLOW}📝 NOTE:${NC}"
-echo "  • API key is saved to $SHELL_RC"
-echo "  • Run 'source $SHELL_RC' to activate in current session"
-echo "  • New terminal sessions will automatically load it"
-echo "  • Verify with: echo \$GOOGLE_API_KEY"
+if [[ "$SOURCED" == true ]]; then
+    echo "  • API key is saved to $SHELL_RC"
+    echo "  • API key is active in this session"
+    echo "  • New terminal sessions will automatically load it"
+else
+    echo "  • API key is saved to $SHELL_RC"
+    echo "  • Use 'source ./setup_api_key.sh' next time for immediate activation"
+    echo "  • Or run 'source $SHELL_RC' to activate in current session"
+    echo "  • New terminal sessions will automatically load it"
+fi
 echo ""
 if [[ "$OS" == "macos" ]]; then
     echo -e "${BLUE}🍎 macOS:${NC} API key will be available in new Terminal windows"
