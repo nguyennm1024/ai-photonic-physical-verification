@@ -30,12 +30,9 @@ echo -e "${BLUE}================================${NC}"
 echo ""
 
 if [[ "$SOURCED" == true ]]; then
-    echo -e "${GREEN}✅ Script is being sourced - API key will be active immediately!${NC}"
-else
-    echo -e "${YELLOW}⚠️  Script is being executed - you'll need to run one command after this${NC}"
-    echo -e "${BLUE}💡 Tip: Next time use 'source ./setup_api_key.sh' for automatic activation${NC}"
+    echo -e "${GREEN}✅ Running in source mode - API key will be active immediately${NC}"
+    echo ""
 fi
-echo ""
 
 # Detect OS and shell
 detect_os() {
@@ -110,9 +107,6 @@ detect_shell_config() {
 detect_os
 detect_shell_config
 
-echo "🔍 Detected: $OS with $SHELL_NAME shell"
-echo "📁 Using config file: $SHELL_RC"
-echo ""
 
 echo "1️⃣  Get your FREE Google API Key:"
 echo "   👉 https://makersuite.google.com/app/apikey"
@@ -122,7 +116,6 @@ echo ""
 
 # Unset any existing API key in current session
 unset GOOGLE_API_KEY
-echo "🧹 Cleared any existing API key from current session"
 
 # Read API key
 read -p "Enter your Google API Key: " api_key
@@ -160,81 +153,42 @@ echo "export GOOGLE_API_KEY=\"$api_key\"" >> "$SHELL_RC"
 
 # Automatically activate the API key in current session
 export GOOGLE_API_KEY="$api_key"
-echo "✅ Set new API key in current session"
 
-# Note: The source command below only affects the script's subshell
-# The parent shell needs to be updated separately
-echo "🔄 Loading updated shell configuration..."
+# Source the shell config to ensure all changes are loaded
 source "$SHELL_RC" 2>/dev/null || true
 
 echo ""
-echo -e "${GREEN}================================${NC}"
 echo -e "${GREEN}✅ API Key Configured!${NC}"
-echo -e "${GREEN}================================${NC}"
-echo ""
-echo "API key added to: $SHELL_RC"
 echo ""
 
 if [[ "$SOURCED" == true ]]; then
     # Script was sourced - key is active in current session
-    echo -e "${GREEN}✅ API key is now active in your current session!${NC}"
-    echo ""
-    echo -e "${BLUE}🔍 Verify it's set:${NC}"
-    echo -e "${GREEN}  echo \$GOOGLE_API_KEY${NC}"
-    echo ""
-    echo "Current value: $GOOGLE_API_KEY"
+    echo -e "${GREEN}✅ API key is now active!${NC}"
+    echo "   Verify: echo \$GOOGLE_API_KEY"
 else
-    # Script was executed - provide one-liner for activation
-    echo -e "${GREEN}✅ Configuration complete!${NC}"
+    # Script was executed - provide OS-specific activation command
+    echo -e "${YELLOW}🚀 Copy and run this command:${NC}"
     echo ""
-    echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
-    echo -e "${YELLOW}🚀 COPY AND RUN THIS COMMAND TO ACTIVATE:${NC}"
-    echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
-    echo ""
-    echo -e "${GREEN}export GOOGLE_API_KEY=\"$api_key\"${NC}"
-    echo ""
-    echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
-    echo ""
-    echo -e "${BLUE}💡 After running the command above, verify with:${NC}"
-    echo -e "${GREEN}  echo \$GOOGLE_API_KEY${NC}"
+    
+    # Provide OS-specific command
+    if [[ "$OS" == "macos" ]]; then
+        if [[ "$SHELL_NAME" == "zsh" ]]; then
+            echo -e "${GREEN}source ~/.zshrc${NC}"
+        else
+            echo -e "${GREEN}source ~/.bash_profile${NC}"
+        fi
+    else
+        # Linux (Ubuntu, Fedora, etc.)
+        if [[ "$SHELL_NAME" == "zsh" ]]; then
+            echo -e "${GREEN}source ~/.zshrc${NC}"
+        else
+            echo -e "${GREEN}source ~/.bashrc${NC}"
+        fi
+    fi
 fi
-echo ""
-echo -e "${YELLOW}📝 NOTE:${NC}"
-if [[ "$SOURCED" == true ]]; then
-    echo "  • API key is saved to $SHELL_RC"
-    echo "  • API key is active in this session"
-    echo "  • New terminal sessions will automatically load it"
-else
-    echo "  • API key is saved to $SHELL_RC"
-    echo "  • Use 'source ./setup_api_key.sh' next time for immediate activation"
-    echo "  • Or run 'source $SHELL_RC' to activate in current session"
-    echo "  • New terminal sessions will automatically load it"
-fi
-echo ""
-if [[ "$OS" == "macos" ]]; then
-    echo -e "${BLUE}🍎 macOS:${NC} API key will be available in new Terminal windows"
-elif [[ "$OS" == "ubuntu" ]]; then
-    echo -e "${BLUE}🐧 Ubuntu:${NC} API key will be available in new terminal sessions"
-elif [[ "$OS" == "fedora" ]]; then
-    echo -e "${BLUE}🎩 Fedora:${NC} API key will be available in new terminal sessions"
-else
-    echo -e "${BLUE}🐧 Linux:${NC} API key will be available in new terminal sessions"
-fi
-echo ""
-echo "Ready to start the application:"
-if [[ -d ".venv" ]]; then
-    echo -e "${BLUE}  source .venv/bin/activate${NC}"
-    echo -e "${BLUE}  python main.py${NC}"
-else
-    echo -e "${BLUE}  python3 main.py${NC}"
-fi
-echo ""
 
-# Provide a convenient one-liner
-echo -e "${YELLOW}💡 Quick start (copy & paste):${NC}"
-if [[ -d ".venv" ]]; then
-    echo -e "${BLUE}  source .venv/bin/activate && python main.py${NC}"
-else
-    echo -e "${BLUE}  python3 main.py${NC}"
+if [[ "$SOURCED" == false ]]; then
+    echo ""
+    echo -e "${BLUE}💡 Tip: Next time use 'source ./setup_api_key.sh' for automatic activation${NC}"
 fi
 echo ""
