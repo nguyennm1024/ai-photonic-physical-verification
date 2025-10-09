@@ -75,13 +75,31 @@ echo -e "${GREEN}================================${NC}"
 echo ""
 echo "API key added to: $SHELL_RC"
 echo ""
-echo -e "${YELLOW}⚠️  IMPORTANT:${NC}"
-echo "Run this command to activate for current session:"
+echo -e "${YELLOW}⚠️  IMPORTANT - Run this command now:${NC}"
 echo ""
-echo -e "${BLUE}  source $SHELL_RC${NC}"
+echo -e "${GREEN}  source $SHELL_RC${NC}"
 echo ""
-echo "Or restart your terminal."
+echo "This will activate the API key in your current terminal session."
 echo ""
-echo "To start the application:"
-echo -e "${BLUE}  python3 main.py${NC}"
+echo -e "${YELLOW}📝 NOTE:${NC}"
+echo "  • After running 'source $SHELL_RC', the API key will be active"
+echo "  • New terminal sessions will automatically load it"
+echo "  • You can verify it's set by running: echo \$GOOGLE_API_KEY"
+echo ""
+echo "Then start the application:"
+if [[ -d ".venv" ]]; then
+    echo -e "${BLUE}  source .venv/bin/activate${NC}"
+    echo -e "${BLUE}  python main.py${NC}"
+else
+    echo -e "${BLUE}  python3 main.py${NC}"
+fi
+echo ""
+
+# Provide a convenient one-liner
+echo -e "${YELLOW}💡 Quick start (copy & paste):${NC}"
+if [[ -d ".venv" ]]; then
+    echo -e "${BLUE}  source $SHELL_RC && source .venv/bin/activate && python main.py${NC}"
+else
+    echo -e "${BLUE}  source $SHELL_RC && python3 main.py${NC}"
+fi
 echo ""
