@@ -96,6 +96,10 @@ echo ""
 echo "2️⃣  Enter your API key below:"
 echo ""
 
+# Unset any existing API key in current session
+unset GOOGLE_API_KEY
+echo "🧹 Cleared any existing API key from current session"
+
 # Read API key
 read -p "Enter your Google API Key: " api_key
 
@@ -132,6 +136,7 @@ echo "export GOOGLE_API_KEY=\"$api_key\"" >> "$SHELL_RC"
 
 # Automatically activate the API key in current session
 export GOOGLE_API_KEY="$api_key"
+echo "✅ Set new API key in current session"
 
 # Note: The source command below only affects the script's subshell
 # The parent shell needs to be updated separately
@@ -154,6 +159,9 @@ echo -e "${GREEN}  source $SHELL_RC && echo \"API Key: \$GOOGLE_API_KEY\"${NC}"
 echo ""
 echo -e "${BLUE}🚀 Or run this to activate immediately:${NC}"
 echo -e "${GREEN}  export GOOGLE_API_KEY=\"$api_key\"${NC}"
+echo ""
+echo -e "${BLUE}🔍 Verify the key is set:${NC}"
+echo -e "${GREEN}  echo \$GOOGLE_API_KEY${NC}"
 echo ""
 echo -e "${YELLOW}📝 NOTE:${NC}"
 echo "  • API key is saved to $SHELL_RC"
