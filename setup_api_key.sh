@@ -133,24 +133,30 @@ echo "export GOOGLE_API_KEY=\"$api_key\"" >> "$SHELL_RC"
 # Automatically activate the API key in current session
 export GOOGLE_API_KEY="$api_key"
 
-# Also source the shell config to ensure all changes are loaded
+# Note: The source command below only affects the script's subshell
+# The parent shell needs to be updated separately
 echo "🔄 Loading updated shell configuration..."
-source "$SHELL_RC"
+source "$SHELL_RC" 2>/dev/null || true
 
 echo ""
 echo -e "${GREEN}================================${NC}"
-echo -e "${GREEN}✅ API Key Configured & Activated!${NC}"
+echo -e "${GREEN}✅ API Key Configured!${NC}"
 echo -e "${GREEN}================================${NC}"
 echo ""
 echo "API key added to: $SHELL_RC"
-echo "API key activated in current session: $GOOGLE_API_KEY"
 echo ""
-echo -e "${GREEN}✅ API key is now active and ready to use!${NC}"
+echo -e "${YELLOW}⚠️  IMPORTANT - To activate in your current shell, run:${NC}"
+echo ""
+echo -e "${GREEN}  source $SHELL_RC${NC}"
+echo ""
+echo -e "${BLUE}💡 Or use this one-liner to activate and verify:${NC}"
+echo -e "${GREEN}  source $SHELL_RC && echo \"API Key: \$GOOGLE_API_KEY\"${NC}"
 echo ""
 echo -e "${YELLOW}📝 NOTE:${NC}"
-echo "  • API key is now active in this session (automatically loaded)"
-echo "  • New terminal sessions will automatically load it from $SHELL_RC"
-echo "  • You can verify it's set by running: echo \$GOOGLE_API_KEY"
+echo "  • API key is saved to $SHELL_RC"
+echo "  • Run 'source $SHELL_RC' to activate in current session"
+echo "  • New terminal sessions will automatically load it"
+echo "  • Verify with: echo \$GOOGLE_API_KEY"
 echo ""
 if [[ "$OS" == "macos" ]]; then
     echo -e "${BLUE}🍎 macOS:${NC} API key will be available in new Terminal windows"
