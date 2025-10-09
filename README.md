@@ -40,10 +40,40 @@ A comprehensive GUI application for automated photonic integrated circuit (PIC) 
 
 ## 🛠 Installation
 
-**Prerequisites:**
-- Python 3.9+ with tkinter
-- [Google Gemini API Key](https://makersuite.google.com/app/apikey)
-- SVG Converter (rsvg-convert or inkscape)
+### ⚡ Quick Install (Recommended)
+
+**One-command automated installation:**
+
+```bash
+# Clone repository
+git clone https://github.com/nguyennm1024/ai-photonic-physical-verification.git
+cd ai-photonic-physical-verification
+
+# Run automated installer (macOS, Ubuntu/Debian, Fedora)
+./install.sh
+
+# Setup your Google API key
+./setup_api_key.sh
+
+# Start the application
+python3 main.py
+```
+
+**That's it!** The script automatically installs:
+- Python 3.11 and dependencies
+- Tcl/Tk GUI libraries
+- SVG converter (librsvg)
+- All Python packages
+
+### 📋 What You Need
+
+1. **Operating System**: macOS, Ubuntu/Debian, or Fedora
+2. **Google API Key**: Get FREE key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+3. **5-10 minutes** for installation
+
+### 🔧 Manual Installation
+
+If you prefer manual installation or use Windows:
 
 ```bash
 # Clone and install
@@ -63,7 +93,10 @@ sudo apt-get install librsvg2-bin  # Ubuntu/Debian
 python test_modules.py
 ```
 
-**For detailed instructions and troubleshooting:** See [INSTALLATION.md](INSTALLATION.md)
+**Guides:**
+- **📖 First time?** See [QUICKSTART.md](QUICKSTART.md) (3 simple steps!)
+- **🔧 Detailed setup:** See [INSTALLATION.md](INSTALLATION.md)
+- **❓ Troubleshooting:** See [INSTALLATION.md#troubleshooting](INSTALLATION.md#troubleshooting)
 
 ## 🚀 Quick Start
 
