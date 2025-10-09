@@ -47,7 +47,7 @@ from ui.components import (
     ImageCanvas,
     SummaryPanel
 )
-from ui.event_handlers import EventHandlers
+from ui.handlers import EventHandlers
 from ui.modern_theme import ModernTheme
 
 
@@ -246,6 +246,8 @@ class LayoutVerificationApp:
         self.handlers.bind_ui_callback('display_tile_review', self._display_tile_review)
         self.handlers.bind_ui_callback('update_tile_status', self._update_tile_status)
         self.handlers.bind_ui_callback('clear_tile_status', self._clear_tile_status)
+        self.handlers.bind_ui_callback('update_tile_review_status', self._update_tile_review_status)
+        self.handlers.bind_ui_callback('update_focused_tile', self._update_focused_tile)
     
     def _handle_generate_with_config(self):
         """Get config from grid panel and call handler"""
@@ -299,17 +301,27 @@ class LayoutVerificationApp:
         """Update summary panel"""
         self.summary_panel.update_summary(total, issues, clean, time_elapsed)
     
-    def _display_tile_review(self, image, row: int, col: int, index: int, ai_result: str = "", classification: str = None):
+    def _display_tile_review(self, image, row: int, col: int, index: int, ai_result: str = "", classification: str = None, is_user_classification: bool = False):
         """Display tile in review panel"""
-        self.tile_review.display_tile(image, row, col, index, ai_result, classification)
+        self.tile_review.display_tile(image, row, col, index, ai_result, classification, is_user_classification)
 
-    def _update_tile_status(self, row: int, col: int, classification: str):
+    def _update_tile_status(self, row: int, col: int, classification: str, analyzed: bool = True):
         """Update visual status of tile on layout"""
-        self.image_canvas.update_tile_status(row, col, classification, analyzed=True)
+        self.image_canvas.update_tile_status(row, col, classification, analyzed=analyzed)
 
     def _clear_tile_status(self):
         """Clear all tile status overlays"""
         self.image_canvas.clear_tile_status()
+
+    def _update_tile_review_status(self, classification: str):
+        """Update status indicator in tile review panel"""
+        print(f"🔄 MainApp._update_tile_review_status() called with: {classification}")
+        self.tile_review.update_status_indicator(classification)
+        print(f"   ✅ Called tile_review.update_status_indicator()")
+
+    def _update_focused_tile(self, row: int, col: int):
+        """Update purple border for focused tile"""
+        self.image_canvas.update_focused_tile(row, col)
 
 
 def main():
@@ -319,17 +331,28 @@ def main():
         root = tk.Tk()
     except Exception as e:
         raise SystemExit(
-            "Tcl/Tk runtime is not available.\n"
-            "Ensure Tcl/Tk libraries are installed and discoverable.\n\n"
-            "On macOS with Homebrew:\n"
-            "  brew install tcl-tk\n\n"
-            "If Python still cannot find Tcl/Tk, set environment variables before running:\n"
-            "  export TCL_LIBRARY=/opt/homebrew/opt/tcl-tk/lib/tcl9.0:/opt/homebrew/opt/tcl-tk/lib/tcl8.6\n"
-            "  export TK_LIBRARY=/opt/homebrew/opt/tcl-tk/lib/tk9.0:/opt/homebrew/opt/tcl-tk/lib/tk8.6\n"
-            "  export PATH=/opt/homebrew/opt/tcl-tk/bin:$PATH\n\n"
-            "If using uv-managed Python, upgrade and recreate the venv:\n"
-            "  uv python upgrade --reinstall && uv venv --clear .venv\n\n"
-            "Test Tk availability with: python3 -m tkinter\n\n"
+            "❌ Tcl/Tk runtime is not available.\n\n"
+            "📦 INSTALLATION INSTRUCTIONS:\n\n"
+            "macOS with Homebrew:\n"
+            "  1. Install Tcl/Tk:\n"
+            "     brew install tcl-tk\n\n"
+            "  2. Set environment variables (add to ~/.zshrc or ~/.bash_profile):\n"
+            "     export TCL_LIBRARY=/opt/homebrew/opt/tcl-tk/lib/tcl9.0:/opt/homebrew/opt/tcl-tk/lib/tcl8.6\n"
+            "     export TK_LIBRARY=/opt/homebrew/opt/tcl-tk/lib/tk9.0:/opt/homebrew/opt/tcl-tk/lib/tk8.6\n"
+            "     export PATH=/opt/homebrew/opt/tcl-tk/bin:$PATH\n\n"
+            "  3. Reload shell configuration:\n"
+            "     source ~/.zshrc  # or source ~/.bash_profile\n\n"
+            "  4. If using uv-managed Python, reinstall Python:\n"
+            "     uv python uninstall\n"
+            "     uv python install\n\n"
+            "Linux (Ubuntu/Debian):\n"
+            "  sudo apt-get update\n"
+            "  sudo apt-get install python3-tk\n\n"
+            "Linux (Fedora/RHEL):\n"
+            "  sudo dnf install python3-tkinter\n\n"
+            "🧪 TEST:\n"
+            "  python3 -m tkinter\n"
+            "  (Should open a small Tk window if installed correctly)\n\n"
             f"Original error: {e}"
         )
     
